@@ -1,0 +1,69 @@
+---
+title: "Intro to Markdown"
+author: "Julia"
+date: "9/11/2020"
+output: html_document
+---
+
+```{r setup, include = FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, 
+                       warning = FALSE,
+                       message = FALSE) # and so on. Add whatever you want!
+
+```
+
+
+
+You can type text. It just works!
+
+# Top level header
+
+## Smaller header
+
+### Even smaller header!
+
+#### BUT WAIT
+
+##### THERE'S MORE
+
+*italic*
+
+**Bold**
+
+- list item 1  
+       - sub item after **6** spaces! (and 2 spaces at the end of a line!)
+- list item 2
+- list item 3
+
+1. item 1
+1. item 2
+1. item 3
+
+
+
+```{r a_chunk}
+#code code code!
+data(mtcars)
+
+head(mtcars)
+```
+ 
+ 
+ 
+ no code
+```{r second chunk, echo = FALSE}
+colMeans(mtcars)
+```
+
+give me no warnings for messates
+```{r chunk with options}
+#stuff
+rowMeans(mtcars)
+
+```
+
+
+
+
+
