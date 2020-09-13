@@ -1,0 +1,106 @@
+---
+author: "Julia McCartney"
+date: "Due 9/18/2020"
+output: html_document
+---
+# Homework 1: Intro to R {.tabset}
+
+#### Julia McCartney  
+#### Due 9/18/2020
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Question 1
+
+Load quakes with data(quakes). Show what’s there with str() and summary().
+
+
+```{r }
+data("quakes")
+
+str(quakes)
+```
+
+```{r, eval = FALSE}
+summary(quakes)
+```
+
+
+```{r, echo=FALSE}
+
+knitr::kable(summary(quakes))
+```
+
+
+## Question 2
+
+Show the entirety of the column long.
+
+```{r}
+quakes$long
+```
+
+
+## Question 3
+
+Hey, another useful function - unique()! Apply it to a vector, and you can see what are all of the unique values. It’s great for really digging into a problematic vector.
+
+What unique stations are there? Use length() with unique() to determine how many stations there are.
+
+```{r}
+length(unique(quakes$stations))
+```
+
+There are 102 unique stations.
+
+## Question 4
+
+Using range(), what is the range of depths where quakes occur?
+
+```{r}
+range(quakes$depth)
+```
+
+The earthquakes in this dataset occurred at depths between 40 and 680 km.
+
+## Extra Credit
+
+E.C. Where was the earthquake of largest magnitude found? You’ll need to use come comparisons and the max() function for this in your indices instead of a number!
+
+```{r, eval = FALSE}
+max_mag <- max(quakes$mag)
+
+quakes[quakes$mag %in% max_mag,]
+```
+
+
+```{r, echo=FALSE}
+max_mag <- max(quakes$mag)
+
+knitr::kable(quakes[quakes$mag %in% max_mag,])
+
+```
+
+
+The largest quake in this dataset was at latitude -15.56, longitude 167.62.   
+  
+
+
+```{r, echo=FALSE}
+library(RgoogleMaps)
+
+
+BGB =list(lat =-15.56360, lon =167.62120)
+par(pty="s")
+map1 = plotmap(BGB$lat, BGB$lon, zoom = 9, maptype = "terrain", size = c(640,
+640))
+
+```
+
+  
+Map created using the package [RgoogleMaps](https://cran.r-project.org/web/packages/RgoogleMaps/RgoogleMaps.pdf)
+
+
