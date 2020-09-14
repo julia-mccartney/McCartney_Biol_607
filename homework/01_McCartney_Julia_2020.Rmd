@@ -8,7 +8,7 @@ output: html_document
 #### Julia McCartney  
 #### Due 9/18/2020
 
-Here is the link to this file on [GitHub](https://github.com/julia-mccartney/McCartney_Biol_607/tree/master/homework)  
+Here is the link to this file on [GitHub](https://github.com/julia-mccartney/McCartney_Biol_607/blob/master/homework/01_McCartney_Julia_2020.Rmd)  
 
 
 ```{r setup, include=FALSE}
