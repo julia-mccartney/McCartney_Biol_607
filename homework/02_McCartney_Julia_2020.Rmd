@@ -1,0 +1,48 @@
+---
+title: "Homework 2"
+author: "Julia"
+date: "9/20/2020"
+output: html_document
+---
+
+
+1. Some Data with Flippers
+1a. Load the library palmerpenguins after installing it.
+
+1b. Show the head of the dataset penguins
+
+1c. What do you learn by using str() and summary() on penguins()
+
+1d. What are the quantiles of bill depth across the whole data set? What do those quantiles mean?
+
+2. What’s here? Let’s use dplyr!
+2a. If I have a vector, c(1,4,7,NA,9), what is its mean? Note, the NA is going to cause a problem. Look at ?mean to learn how to solve it.
+
+2b. What is the mean, sd, and median of body mass across the data set? Note, these NAs are going to cause some problems, so you might need to look at the documentation for the relevant functions.
+
+2c. Repeat 2b, but, show us how these quantities differ by species
+
+2d. Repeat 2c, but just for Biscoe island. What is different in the results?
+
+2E Make a species-island column in penguins using paste(). This is an awesome function that takes multiple strings, and slams them together using the argument sep = to define how the string should be combined. Try out paste("Hello", "Goodbye", sep = "! ") to see how it works. Have the two be separated by _.
+
+3. A Little Light Plotting
+3a. Show the distribution of flipper_length_mm by species and island using boxplots. For one point of extra credit, redo creating the species_island column with the sep as \n instead of _. What does \n do? You will find it very handy in the future.
+
+3b. Show the relationship between average flipper length and average body mass by species and island. What do you see?
+
+3c. Interesting. What if you had made the same plot with the whole dataset? What do you see? Is there anything that could clarify the result any more? Think about it - lots of possible right answers here.
+
+4. Let’s get ready to simulate
+4a. Grab the values for bill_length_mm for Gentoo penguins in Biscoe Island and put it into an object. Note, the dplyr function pull() is kinda cool, as if you apply it to a data frame, it will pull out a vector from a column of interest. Try 21, 21, 22.8, 21.4, 18.7, 18.1, 14.3, 24.4, 22.8, 19.2, 17.8, 16.4, 17.3, 15.2, 10.4, 10.4, 14.7, 32.4, 30.4, 33.9, 21.5, 15.5, 15.2, 13.3, 19.2, 27.3, 26, 30.4, 15.8, 19.7, 15, 21.4. Kinda cool. Might help you here.
+
+4b. Use replicate() to calculate the standard error of the mean 10 times. Use a formula! Don’t forget that NA values shouldn’t be included!
+
+4c. Use map_df() to create a data frame with the mean and sd of different sample sizes using the first 5 through 100 values (so, n = 5:100 - smallest sample size will have the values 1-5). Make sure the sample size is included in the final data frame.
+
+4d. Plot the relationship between sample size and SD and sample size versus SE of the mean. What difference do you see and why? Note, you’ll need to create a column for SE here!
+
++2 EC for using par() to make a two-panel plot. Don’t forget to reset back to a single plot per panel after making a two-panel plot. Otherwise things get weird.
+
+Extra Credit.
+Making beautiful tables is hard. There are a number of good packages to help you do that - and they were recently featured in this excellent article - https://rfortherestofus.com/2019/11/how-to-make-beautiful-tables-in-r/. Make a beautiful table showing the average properties of bills of penguins by species, sex, and island. Use whatever package you like. A basic nice table is worth 4 points. +1 for every additional bit of information you can convey with the table other than a nicely formatted table. Please explain what you have done to get each point. +1 for naturally incorporating each additional piece of information about properties beyond means. How visually appealing can you make this?
