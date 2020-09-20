@@ -191,6 +191,77 @@ mtcars_6cyl <- mtcars %>%
 1:10 != 5
 
 
+# Simulation ####
+
+#three functions to do this
+#' 1 - base::replicate()
+replicate(n=10, sum(1:100))
+
+#' 2 purrr:map_dbl
+library(purrr)
+#have a lot of split/apply/combnine functions
+#maps are 'typed'
+#use ~ for complex function
+map_dbl(1:10, ~sum(1:100))
+map_dbl(1:10, ~sum(1:.x)) #.x is the stand-in variable here
+
+#what if i want a df?
+map_df(1:10, ~data.frame(x=.x,
+                 y = sum(1:.x)))
+
+#can couple this with random
+
+
+# Exercise set 3 ####
+
+#1. Use replicate() to repeatedly average the numbers 1:10 seven times.
+
+replicate(n=7, mean(1:10))
+
+
+#2. Do the same thing with map_dbl() - also what happens if you use other map functions?
+  
+map_dbl(1:7, ~mean(1:10))
+
+map_df(1:7, ~data.frame(x = .x,
+                        y = mean(1:10)))
+
+#3. Start with a vector:
+#my_vec <- c(11, 10, 10, 9, 10, 11, 10, 9, 10, 
+#              12, 9, 11, 8, 11, 11, 10, 11, 10, 
+#              11, 9)
+#Use map_df() to make a data frame that, for the numbers 3 through 15, returns two columns. 
+#One is the the average of the element of the vector 1 through the chosen number, the second is 
+#the standard deviation. e.g. 10.2 for a mean - but the 10 will be .x for you!
+  
+my_vec <- c(11, 10, 10, 9, 10, 11, 10, 9, 10, 
+            12, 9, 11, 8, 11, 11, 10, 11, 10, 
+            11, 9)
+
+map_df(3:15, ~data.frame(
+                         av = mean(my_vec[1:.x]),
+                         sd = sd(my_vec[1:.x])))
+
+#This does not work:
+#map_df(my_vec[3:15], ~data.frame(x = .x,
+#                                 av = mean(1:.x),
+#                                 sd = sd(1:.x)))
+
+#because this makes a vector out of my_vec[3:15] and then uses that instead of 1:3, 1:5, etc, 
+# it is 1:10, 1:9, etc... 
+
+
+# for loops
+
+x <- numeric(length = 10)
+for(i in 1:10){
+  x[i] <- sum(1:i)
+}
+x
+
+#' 3
+
+
 
 
 
