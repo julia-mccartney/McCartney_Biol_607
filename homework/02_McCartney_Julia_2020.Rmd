@@ -19,6 +19,7 @@ library(palmerpenguins)
 library(tidyverse)
 library(ggplot2)
 library(formattable)
+library(reactable)
 ```
 
 
@@ -26,7 +27,7 @@ library(formattable)
 
 ### 1a. Load the library palmerpenguins after installing it.
 
-```{r 1a display}
+```{r 1a}
 # To install -> install.packages("palmerpenguins")
 library(palmerpenguins)
 ```
@@ -35,6 +36,7 @@ library(palmerpenguins)
 ### 1b. Show the head of the dataset penguins
 
 ```{r 1b code display, eval=FALSE}
+#look at the top of the penguins data set
 head(penguins)
 ```
 
@@ -47,6 +49,7 @@ formattable(head(penguins)) # Just making it look nicer than code output
 ### 1c. What do you learn by using str() and summary() on penguins()
 
 ```{r 1c output, collapse=TRUE}
+#Get a sense of the data in penguins 
 str(penguins)
 
 summary(penguins)
@@ -59,6 +62,7 @@ From str() and summary() it is apparent that this data is focused on various bio
   
 The quantiles of bill depth (mm) are as follows: 
 ```{r 1d output}
+#look at the quantiles for bill depth
 quantile(penguins$bill_depth_mm, na.rm = TRUE)
 ```
   
@@ -66,6 +70,7 @@ The quantiles displayed here are breaking up the observations into 4 segments. T
   
 This can also be seen using summary:
 ```{r 1d two}
+# Another way of looking at quantiles
 summary(penguins$bill_depth_mm)
 ```
 
@@ -77,7 +82,7 @@ Note, the NA is going to cause a problem. Look at ?mean to learn how to solve it
   
 
 ```{r 2a output}
-
+# Create vector
 my_vector <- c(1,4,7,NA,9)
 
 mean(my_vector)
@@ -87,6 +92,7 @@ Because there is an NA present, R cannot compute the mean - the program 'knows' 
 This can be solved with `na.rm`, which removes NAs from the vector before calculating the mean. This way, it will be as if the code was `mean(c(1,4,7,9))`  
   
 ```{r 2a output 2}
+# Remove NAs in vector
 mean(my_vector, na.rm = TRUE)
 ```
 
@@ -96,12 +102,12 @@ mean(my_vector, na.rm = TRUE)
 Note, these NAs are going to cause some problems, so you might need to look at the documentation for the relevant functions.  
   
 ```{r 2b}
-
+# Calculate mean, median, and sd for body mass
 penguins %>% 
  summarize(Mean_Body_Mass = mean(body_mass_g, na.rm = TRUE), # calculate mean
             Median_Body_Mass = median(body_mass_g, na.rm = TRUE), # calculate median
             Standard_Deviation_Body_Mass = sd(body_mass_g, na.rm = TRUE)) %>% # calculate sd
-  formattable()
+  formattable() # make it look a bit nicer
   
 
 ```
@@ -110,7 +116,7 @@ penguins %>%
 ### 2c. Repeat 2b, but, show us how these quantities differ by species
 
 ```{r 2c, message = FALSE}
-
+# Calculate mean, median, and sd for body mass by species
 penguins %>% 
   group_by(species) %>% # aggregate data by species
   summarize(Mean_Body_Mass = mean(body_mass_g, na.rm = TRUE), # calculate mean
@@ -125,7 +131,7 @@ penguins %>%
 ### 2d. Repeat 2c, but just for Biscoe island. What is different in the results?
 
 ```{r 2d code displayed, message = FALSE}
-
+# Calculate mean, median, and sd for body mass by species for Biscoe island
 penguins %>% 
   filter(island == "Biscoe") %>% # select only samples from Biscoe island
   group_by(species) %>% # aggregate data by species
@@ -140,7 +146,7 @@ penguins %>%
 Only two species are represented on Biscoe island - Adelie and Gentoo penguins. The mean and median body mass for each species are slightly higher for Adelie penguins and exactly the same for Gentoo penguins on Biscoe island as they are across all islands. (Looking at the data, we can see that all of the Gentoo penguins sampled are on Biscoe island) 
   
 ```{r 2d extra}
-
+# look at the number of Gentoo penguins by island
 penguins %>% 
   filter(species == "Gentoo") %>% # pull only Gentoo samples
   select(species, island) %>% # look at the number of samples per island
@@ -152,7 +158,7 @@ penguins %>%
 This is an awesome function that takes multiple strings, and slams them together using the argument sep = to define how the string should be combined. Try out paste("Hello", "Goodbye", sep = "! ") to see how it works. Have the two be separated by _.
 
 ```{r 2e}
-
+# Create a column for species and island
 penguins <- penguins %>% 
   na.omit() %>% 
   mutate(species_island = paste(species, island, sep = "_")) # Merge species and island, but separate only with a "_"
@@ -173,6 +179,7 @@ For one point of extra credit, redo creating the species_island column with the 
 The string `\n` is used to indicate a new line
   
 ```{r 3a, message = FALSE}
+# Plot flipper length by species and island
 
 penguins <- penguins %>% 
   mutate(species_island = paste(species, island, sep = "\n")) # change separation
@@ -180,7 +187,7 @@ penguins <- penguins %>%
 # Plot
 boxplot(flipper_length_mm ~ species_island, data = penguins) 
 
-# Same plot but nicer
+# Same plot but ggplot is just better
 ggplot(penguins, aes(x = species_island, y = flipper_length_mm, fill = species_island))+
   geom_boxplot()+
   labs(x = "Species and Island",
@@ -193,14 +200,14 @@ ggplot(penguins, aes(x = species_island, y = flipper_length_mm, fill = species_i
 ### 3b. Show the relationship between average flipper length and average body mass by species and island. What do you see?
 
 ```{r 3b, message = FALSE}
-# Plot
+# Plot av  body mass by flipper length, group by island/species
 penguins %>% 
   group_by(species_island) %>% # aggregate by species and island
   summarize(av_fL = mean(flipper_length_mm, na.rm = TRUE), # calculate the mean flipper length
             av_bm = mean(body_mass_g, na.rm = TRUE)) %>%  # calculate the mean body mass
   plot(av_fL ~ av_bm, data = .)
 
-# Nicer in ggplot
+# Better in ggplot
 penguins %>% 
   group_by(species, island) %>% # aggregate data by species/island
   summarize(av_fL = mean(flipper_length_mm, na.rm = TRUE), # calculate mean flipper length
@@ -221,9 +228,10 @@ There seems like there may be a connection between body mass (g) and flipper len
   
 If we look at the spread of these two metrics for the whole dataset...
 ```{r 3c one}
+#
 
 penguins %>% 
-  group_by(species, island) %>% # aggregate data by speceis/island
+  group_by(species, island) %>% # aggregate data by species/island
 ggplot(aes(y= flipper_length_mm, x = body_mass_g, color = species, shape = island)) + # plot
   geom_point(na.rm = TRUE) +
   labs(x = "Body Mass (g)",
@@ -326,7 +334,8 @@ replicate(n=10, # replicate 10 times
 ### 4c. Use map_df() to create a data frame with the mean and sd of different sample sizes using the first 5 through 100 values (so, n = 5:100 - smallest sample size will have the values 1-5). 
 Make sure the sample size is included in the final data frame.
 
-```{r}
+```{r 4c}
+# making a df with subsamples 
 subsampled_gentoo_bl <- map_df(5:100, # for numbers 5-100
                                ~data.frame( # create a dataframe
   sample_size = .x, # column with sample size
@@ -334,7 +343,7 @@ subsampled_gentoo_bl <- map_df(5:100, # for numbers 5-100
   sd = sd(bl_gentoo_bis[1:.x]) # calculate sd
 ))
 
-formattable(head(subsampled_gentoo_bl)) # view
+head(subsampled_gentoo_bl) # view
 ```
 
 
@@ -349,8 +358,7 @@ Note, you’ll need to create a column for SE here!
 subsampled_gentoo_bl <- subsampled_gentoo_bl %>% 
   mutate(se = sd/sqrt(sample_size)) # calculate SE
 
-# plot
-
+# plot sd and se over sample size - two-panel plot
 par(mfrow=c(1,2))
 plot(sd ~ sample_size, data = subsampled_gentoo_bl)
 plot(se ~ sample_size, data = subsampled_gentoo_bl)
@@ -382,25 +390,20 @@ penguins_summary_count <- penguins %>%
 
 # Calculate summary statistics for penguin biometrics
 penguins_summary <- penguins %>% 
-  group_by(species, sex, island) %>%  
-  summarize(mean_bill_L = mean(bill_length_mm),
-          mean_bill_D = mean(bill_depth_mm),
-          mean_flipper = mean(flipper_length_mm),
-          mean_bm = mean(body_mass_g),
-          sd_bill_L = sd(bill_length_mm),
-          sd_bill_D = sd(bill_depth_mm),
-          sd_flipper = sd(flipper_length_mm),
-          sd_bm = sd(body_mass_g)) %>% 
+  group_by(species, sex, island) %>%  # aggregate data by species, sex, island
+  summarize(mean_bill_L = mean(bill_length_mm), # calculate mean bill length
+          mean_bill_D = mean(bill_depth_mm), # calculate bill depth
+          sd_bill_L = sd(bill_length_mm), # calculate sd bill length
+          sd_bill_D = sd(bill_depth_mm)) %>%  # calculate sd bill depth
   merge(.,penguins_summary_count, by = c("species", "island", "sex")) 
 
-
-#Calculate SE
 
 ```
   
     
-I plan to use the package [formattable](https://www.rdocumentation.org/packages/formattable/versions/0.2.0.1) to create my table. However, I want the table to be as clean as possible - I don't want to see the species or island listed multiple times in a row. When searching how to do this, I came across [this solution](https://stackoverflow.com/questions/51450402/how-to-collapse-groups-of-row-values-within-a-table-using-formattable). Writing functions are beyond me right now. I am in no way trying to take credit for it, but will gladly use it!
+I plan to use the package [formattable](https://www.rdocumentation.org/packages/formattable/versions/0.2.0.1) to create my table. However, I want the table to be as clean as possible - I don't want to see the species or island listed multiple times in a row. When searching how to do this, I came across [this solution](https://stackoverflow.com/questions/51450402/how-to-collapse-groups-of-row-values-within-a-table-using-formattable). Writing functions are beyond me right now. **I am in no way trying to take credit for it,** but will gladly use it!
 ```{r ec collapse_rows_df}
+# from https://stackoverflow.com/questions/51450402/how-to-collapse-groups-of-row-values-within-a-table-using-formattable
 
 collapse_rows_df <- function(df, variable){
 
@@ -422,17 +425,35 @@ And now we can put together the table!
 # Put together at table
 options(digits = 3)
 
+# setting up colors in table                
+color_set <- formatter("span", 
+  style = x ~ style(color = ifelse(x < 1, "green", 
+    ifelse(x < 2, "red", "darkred")))) 
+
+
 penguins_summary %>% 
-  collapse_rows_df(species) %>% # thank you Michael Harper! 
-formattable(list(Count = color_tile("white", "lightgreen"), # show sampling  size through color intensity
-                 sex = color_tile("pink", "lightblue") # color code sex
-                 )
-            )
+  relocate(sd_bill_L, .after=mean_bill_L) %>% 
+    rename(Species = species, 
+         Island = island,
+         Sex = sex,
+        Mean_Bill_Depth_mm = mean_bill_D,
+        Mean_Bill_Length_mm = mean_bill_L,
+        Standard_Deviation_of_Bill_Length = sd_bill_L,
+        Standard_Deviation_of_Bill_Depth = sd_bill_D) %>% 
+  collapse_rows_df(Species) %>% # thank you Michael Harper! 
+formattable(list(Count = color_tile("white", "lightblue"), # show sampling  size through color intensity
+                 sex = color_tile("pink", "lightblue"), # color code sex
+                Standard_Deviation_of_Bill_Length = color_set, # color code SD
+                Standard_Deviation_of_Bill_Depth = color_set
+                 ))
+ 
+
 
 
 ```
 
-
+  
+No it's not the prettiest, and I wish I had more time this week to play around with it. I have included  the standard deviations along with the means. The standard deviations are colored either green (less than 1), red (1 < x < 2), or dark red (x > 2), with the intention of visually indicating the size of the SD. The more variation, the larger the SD, the darker the color. For fun (though I don't think it really adds any information), I colored the Sex column and included a tile behind the Count column that increases with sample size (larger samples have a darker colored tile)
 
 
 
