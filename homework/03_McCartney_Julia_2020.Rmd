@@ -1,0 +1,317 @@
+---
+author: "Julia"
+date: "9/27/2020"
+output: html_document
+---
+
+# Homework 3: Simulation and Visualization {.tabset}
+
+#### Julia McCartney  
+#### Due 10/2/2020
+
+This homework's file can also be found on [Github]
+
+
+Libraries used  
+```{r libraries, message=FALSE}
+library(ggplot2)
+library(dplyr)
+library(purrr)
+library(ggplot2)
+library(colorfindr)
+library(gganimate)
+```
+
+## 1. Sample Properties
+
+Consider the following vasopressin levels in voles.
+
+```{r 1 prep}
+# Create vole_vavsopressing sample vector
+vole_vaso <- c(98,96,94,88,86,82,77,74,70,60,
+           59,52,50,47,40,35,29,13,6,5)
+```
+
+
+#### 1a. Say “Vole vasopressin” 10 times as fast as you can. How many times did you trip up?
+
+I didn't mess up, but they stopped sounding like real words. 
+
+#### 1b. What is the mean, median, sd, and interquartile range of the sample?
+
+```{r 1b}
+# get basic stats on vole vaso sample
+
+mean(vole_vaso)
+
+median(vole_vaso)
+
+sd(vole_vaso)
+
+IQR(vole_vaso)
+
+```
+
+
+
+#### 1c. What is the standard error of the mean (do this with a formula!)?
+
+```{r 1c}
+# Calculate SEM
+sd(vole_vaso)/sqrt(length(vole_vaso))
+```
+
+
+#### 1d. What does the standard error of the mean tell you about our estimate of the mean values of the population of vole vassopressin?
+
+SEM is a measure of the standard deviation of our sample parameter. Specifically, it indicates that the spread of the entire sampling distribution and our mean is really 
+58.05 + or - 6.65 (could be a range of values). 
+
+## 2. Sample Size for upper quartiles.
+
+We can get the upper quartile value of vole vassopressin with 
+
+`quantile(vole_vaso, probs = 0.75)`
+
+Let’s assume the sample is representative of the popultion.
+
+#### 2a. Use sample() to get just one resample with a sample size of 10. What is its upper quartile?
+
+```{r 2a}
+# Sample vole vaso
+vole_samp1 <- sample(vole_vaso, 10, replace = TRUE)
+
+# Get upper quantile
+quantile(vole_samp1, probs = 0.75)
+
+```
+
+
+#### 2b. Build an initial data frame for simulations with the sample sizes 5 through 20.
+
+```{r 2b}
+# Build data frame of sample sizes
+samp_sizes <- data.frame(samp_size = 5:20)
+
+```
+
+
+#### 2c. Use this data frame to get simulated upper quartiles for each sample size. using 1,000 simulations
+
+```{r 2c, message = FALSE}
+# Reproducibility! 
+set.seed(928374)
+
+# replicate sim upper quartiles by sample size
+vole_samp_sim <- samp_sizes %>% 
+  rowwise(samp_size) %>% # by sample size
+  summarize(Samp_quant = replicate(1000,
+                                   quantile(sample(vole_vaso,
+                                        size = samp_size,
+                                        replace = TRUE), probs = 0.75)))
+
+```
+
+
+#### 2d. With a ggplot, make a guesstimate as to the best sample size for estimating the upper quartile of the population. 
+Use whatever geom you feel makes things most easy to see. 
+
+E.C. Add a red dashed line using geom_vline() or geom_hline() to show where that should be, perhaps.
+
+```{r 2d}
+# plot simulated upper quartiles and determine best/min samp size
+vole_samp_sim %>% 
+  group_by(samp_size) %>% 
+ggplot(aes(x = samp_size, y = Samp_quant, group = samp_size)) + 
+  geom_boxplot()+
+  labs(x = "Sample Size",
+       y = "Upper Quantile (75%) Value") +
+  geom_vline(xintercept = 15, color = "red", linetype = "dashed") # add red line to where I think the sample size should be
+
+```
+  
+The values for the upper quantile seem to level off at around a sample size of 15, meaning that after this point. The variance in upper quantile values after this point will decrease at a negligible rate, meaning that a sample size of about 15 would be a good balance of cost (increases with the number of samples needed), and statistical power (reasonable variance). 
+ 
+
+#### 2e. Plot the SE of the estimate of the upper quantile by sample size. 
+Again, what it the best way to see this? Does it level off? Is there a level you feel acceptable? Justify your answer. Does this match with what you put in 2d?
+
+```{r 2e}
+# Calculate SE
+vole_samp_sim <- vole_samp_sim %>% 
+  group_by(samp_size) %>% 
+  mutate(SE = sd(Samp_quant))
+
+```
+
+
+```{r 2e 2}
+# Plot SE by sample size
+ggplot(vole_samp_sim, aes(x = samp_size, y = SE)) +
+  geom_point() +
+  labs(x = "Sample Size",
+       y = "Standard Error",
+       color = "Sample Size")
+
+```
+  
+Like above, the leveling off seems to start to around a sample size of 15, but does not fully level off. Looking at this graph, I may be inclined to prefer a slightly higher sample size, as it looks flatter around 18, but 15 is likely still acceptable.
+
+## 3. Ggplot
+A little while back, Dave Curran using some of the code I’d posted from a previous 607 lab made a wonderful animation of change in arctic sea ice.
+
+He used data from
+
+ftp://sidads.colorado.edu/DATASETS/NOAA/G02135/north/daily/data/NH_seaice_extent_final_v2.csv ftp://sidads.colorado.edu/DATASETS/NOAA/G02135/north/daily/data/NH_seaice_extent_nrt_v2.csv
+
+I’m providing you with a cleaned form of his data (his code is here) for you to work with in a few plots. The data file is called NH_seaice_extent_monthly_1978_2016.csv
+
+#### 3a. Some setup. 
+Run the code below. For extra credit, look up the packages and functions used and explain what is going on here. But, that’s EC.
+
+```{r 4a, message=FALSE}
+#libraries
+library(dplyr)
+library(readr)
+library(ggplot2)
+library(forcats)
+
+theme_set(theme_bw(base_size=12))
+
+ice <- read_csv("http://biol607.github.io/homework/data/NH_seaice_extent_monthly_1978_2016.csv") %>%
+  mutate(Month_Name = factor(Month_Name),
+         Month_Name = fct_reorder(Month_Name, Month))
+```
+  
+  
+`theme_set(theme_bw(base_size=12))`  
+the function `theme_set()` determines the themes of all plots made after it, unless specifically set. Here the specific theme bw is selected, with the default font size 12.  
+
+```{r example, eval=FALSE}  
+ice <- read_csv("http://biol607.github.io/homework/data/NH_seaice_extent_monthly_1978_2016.csv") %>%
+  mutate(Month_Name = factor(Month_Name),
+         Month_Name = fct_reorder(Month_Name, Month))  
+```
+
+
+In this chunk, data is being read from an outside source into R, Then existing vectors in the dataframe are being modified. Month_Name is changed from a character vector to a numeric vector with the old character vector transformed into factor levels. Then, the factors are reordered in the order of the months in a calendar year. 
+  
+
+
+#### 3b. Make a boxplot showing the variability in sea ice extent every month.
+
+```{r 4b}
+# plot sea ice extent by month (boxplot)
+ggplot(ice, aes(x = Month_Name, y = Extent)) + 
+  geom_boxplot() +
+  labs(x = "Month",
+       title = "Extent of Northern Hemisphere Sea Ice by Month",
+       subtitle = "Data from the NSIDC")
+
+```
+
+
+#### *3c. Use dplyr to get the annual minimum sea ice extent. Plot minimum ice by year. What do you observe?
+
+```{r 4c, message = FALSE}
+# calculate annual minimum extent
+ann_min_ext <- ice %>% 
+  group_by(Year) %>% 
+  summarize(ann_min = min(Extent))
+
+
+# Plot annual minimum extent
+ggplot(ann_min_ext, aes(x = Year, y = ann_min)) +
+  geom_point() + 
+  geom_smooth() + 
+  labs(y = "Minimum Sea Ice Extent",
+       title = "Annual Minimum Sea Ice Extent",
+       caption = "Data from the NSIDC")
+
+```
+  
+The minimum sea ice extent is decreasing steadily, meaning that less sea ice is forming each year. 
+  
+
+#### 3d. With the original data, plot sea ice by year, with different lines 
+(oh! What geom will you need for that?) for different months. Then, use facet_wrap and cut_interval(Month, n=4) to split the plot into seasons.
+
+One thing that’s really cool about faceting is that you can use cut_*() functions on continuous variables to make facets by groups of continuous variables. To see what I mean, try cut_interval(1:10, n = 5) See how it makes five bins of even width? We use cut_interval() or other cut functions with faceting like so: `facet_wrap(~cut_interval(some_variable))`
+
+```{r 3d}
+# Plot Extent by season
+ggplot(ice, aes(x = Month_Name, y = Extent, group = Year, color = Year)) +
+  geom_line() +
+  facet_wrap(~cut_interval(Month, n=4, labels = c("First Quarter", "Second Quarter", 
+                                                  "Third Quarter", "Fourth Quarter")), scales = "free") +
+  labs(y = "Sea Ice Extent",
+       x = " Month",
+       caption = "Data from the NSIDC") 
+
+```
+
+
+
+
+#### 3e. Last, make a line plot of sea ice by month with different lines as different years. 
+Gussy it up with colors by year, a different theme, critical values, and whatever other annotations, changes to axes, etc., you think best show the story of this data. For ideas, see the lab, and look at various palettes around. Extra credit for using colorfindr to make a palette.
+
+```{r 3e}
+# Create new palette (based off of a picture of a poison dart frog)
+new_pal <- colorfindr::get_colors(img = "https://static.inaturalist.org/photos/11809833/large.jpg?1545699058")
+frog_pal <- colorfindr::make_palette(new_pal)
+
+# Plot sea ice by month for each year
+ggplot(ice, aes(x = Month_Name, y = Extent, group = Year, color = Year)) +
+  geom_line() +
+  theme_minimal() +
+  scale_color_gradientn(colours = frog_pal[8:10]) +
+  labs(x = "Month",
+       y = "Sea Ice Extent",
+       title = "Sea Ice Extent, 1978 - 2016",
+       caption = "Data from the NSIDC",
+       color = "Year")
+
+
+```
+
+
+#### 3f. Extra Credit. Make it animated with gganimate. Just like above.
+
+```{r 3f}
+# animate
+library(transformr)
+ggplot(ice, aes(x = Month_Name, y = Extent, group = Year, color = Year)) +
+  geom_line() +
+  theme_minimal() +
+  scale_color_gradientn(colours = frog_pal[8:10]) +
+  labs(x = "Month",
+       y = "Sea Ice Extent",
+       title = "Sea Ice Extent, 1978 - 2016",
+       caption = "Data from the NSIDC",
+       color = "Year") +
+    transition_reveal(Year) +
+  ease_aes("linear")
+
+```
+
+
+#### 3g. Extra Credit. Use the data and make something wholly new and awesome. Even extra extra credit for something amazing animated.
+  
+  
+I don't think this counts as "wholly new and awesome", but I did animate something new
+
+```{r 3g}
+
+# Plot annual minimum extent animated
+ggplot(ann_min_ext, aes(x = Year, y = ann_min)) +
+  geom_point() + 
+     transition_time(Year) +
+  ease_aes("linear")+
+   labs(y = "Minimum Sea Ice Extent",
+       title = "Annual Minimum Sea Ice Extent",
+       caption = "Data from the NSIDC")
+  
+
+  
+```
