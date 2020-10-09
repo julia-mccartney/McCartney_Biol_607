@@ -1,0 +1,11 @@
+﻿Column,Sheet,Units,Definition
+Group ID,Sheet1,Numeric,The Name of the Group
+Variable 1,Sheet1,Numeric,
+Variable2,Sheet1,String,
+SomeLongVariable,Sheet1,String,
+Year,Sheet1,Numeric,
+Month,Sheet1,Numeric,
+Day,Sheet1,Numeric,
+Group ID,Sheet2,Numeric,
+Some_other_variable,Sheet2,Numeric,
+Sometheing_else,Sheet2,String,
