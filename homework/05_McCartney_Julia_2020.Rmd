@@ -1,0 +1,542 @@
+---
+author: "Julia"
+date due: "10/9/2020"
+output: html_document
+---
+
+# Homework 5: Correlation and Regression {.tabset}
+
+#### Julia McCartney  
+#### Due 10/17/2020
+
+This homework's file can also be found on [Github]()
+
+  
+  Libraries Used
+```{r Libraries, message = FALSE}
+library(readr)
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+```
+
+
+## 1. Correlation - Language and Gray-matter
+
+```{r 1 setup, message = FALSE}
+
+# Load in the needed data
+
+language <- read_csv("https://whitlockschluter.zoology.ubc.ca/wp-content/data/chapter16/chap16q15LanguageGreyMatter.csv")
+
+```
+
+### 1a. Display the association between the two variables in a scatter plot
+
+```{r 1a}
+
+ggplot(data = language, aes(x = proficiency, y = greymatter)) +
+  geom_point() +
+  theme_minimal() + 
+  labs(x = "English Language Proficiency",
+       y = "Gray-Matter Density",
+       title = "Language proficiency vs gray-matter density")
+
+```
+
+### 1b. Calculate the correlation between second language 
+
+```{r 1b, message = FALSE}
+
+# check assumptions for calculating r
+samp_language <- data.frame(
+  samp_proficiency = 
+    rnorm(100, mean = mean(language$proficiency), sd = sd(language$proficiency)),
+                          samp_gm = 
+    rnorm(100, mean = mean(language$greymatter), sd = sd(language$greymatter)))
+
+ggplot(data = samp_language, aes(x = samp_proficiency)) +
+  geom_histogram() +
+  theme_minimal()
+# normal
+
+ggplot(data = samp_language, aes(x = samp_gm)) +
+  geom_histogram() +
+  theme_minimal()
+# normal
+
+# The plot from 1a is roughly linear and is elliptical
+
+# assumptions of a bivariate normal distribution are met
+
+# calculate the correlation coefficient, r
+lang_cor <- cor(language$proficiency, language$greymatter)
+
+lang_cor
+```
+
+The correlation coefficient r is 0.818
+
+### 1c Test the null hypothesis of zero correlation
+
+```{r 1c}
+df <- length(language$proficiency) - 2
+
+SE <- sqrt(
+  (1-(lang_cor^2)) / df)
+
+
+t <- lang_cor/SE
+t
+
+```
+
+The critical value for 20 degrees of freedom at p = 0.0001 is 4.84. The correlation is significant (p < 0.0001)
+
+```{r 1c pt2}
+# verify the results using the t.test function
+
+t.test(data = language, x = language$proficiency, y = language$greymatter)
+
+```
+
+The interpretation has not changed - the correlation is significant
+
+#### 1d. What are your assumptions in part (c)?
+
+In 1c, I used a Student's two-tailed t-test to test the null hypothesis that the correlation was zero. In using a t-test, the following assumptions were made:
+    1. The data has a bivariate normal distribution
+      a. X and Y have a linear relationship
+      b. X and Y have normal frequency distributions
+      c. When plotted against each other, a scatter plot of X and Y has an elliptical shape
+    2. The data are a random sample from the population
+    3. The data are independent
+
+As was shown in 1a and 1b, the data meet the testable assumptions in 1. 2 and 3 are assumed from the study design of Mechelli et al. (2004)
+
+### 1e. Does the scatter plot support these assumptions? Explain.
+
+As can be seen in 1a and noted in 1b, the scatter plot of proficiency and graymatter shows a distribution of points in an elliptical shape and a linear relationship. Thus, the graph in 1a supports the assumption of bivariate normality. 
+
+### 1f. Do the results demonstrate that the second language proficiency affects gray-matter density in the brain? Why or why not?
+
+The data and statistical tests above support the claim that there is a correlation between gray-matter density and second language proficiency. However, the t-test was a two tailed t-test and does **not** support any directionality in a claim (i.e. that higher proficiency is correlated with higher gray-matter density). Beyond this, while there is some kind of strong correlation occurring, these data only support association, not causation or any mechanistic explanation. Becoming proficient in a second language may increase gray-matter, or perhaps individuals with higher levels of gray-matter are often more proficient at speaking a second language. The data are not able to answer these questions. 
+
+In short, no, the data do not demonstrate that the second language proficiency affects gray-matter density in the brain. 
+
+## 2. Taurocholate levels
+
+```{r 2 setup, message = FALSE}
+
+# Load in data
+
+liver <- read_csv("https://whitlockschluter.zoology.ubc.ca/wp-content/data/chapter16/chap16q19LiverPreparation.csv")
+
+```
+### 2a. Calculate the correlation coefficient between the taurocholate unbound fraction and the concentration
+
+```{r 2a}
+# calculate correlation concentration v unbound
+cor(liver)
+
+```
+
+
+### 2b. Plot the relationship between the two variables in the graph
+
+```{r 2b}
+# Graph the data
+ggplot(data = liver, aes(x = concentration, y = unboundFraction)) + 
+  geom_point() +
+  theme_minimal() +
+  labs(x = "Concentration (uM)",
+       y = "Unbound Fraction of Taurocholate")
+
+```
+  
+### 2c. Examine the plot in part (b). The relationship apepars to maximally strong, yet the correlation coefficient you calculated in part (a) is not near the maximum possible value. Why not?
+
+One of the assumptions in calculating r is that the data have a bivariate normal distribution. One of the assumptions - that x and y have a linear relationship - is not true, as is clear from the graph. As such, while there is visually a strong relationship, the r cannot be calculated from the data as is.
+
+### 2d. What steps would you take with these data to meet the assumptions of correlation analysis? 
+
+There are two options to solve the issue outlined in 2e. The first is to attempt to transform the data. There are no negative values so a log transformation would be appropriate here. The "Unbound fraction" category is a proportion, so an arcsine transformation would also be appropriate for that vector. The second solution would be to use a non-parametric test of correlation, such as Spearman's rank. This calculation does not have the assumption of bivariate normality, only that the data are randomly sampled, independent, and that the *ranks* of the two values have some sort of linear relationship
+
+## 3 Cats and Happiness
+
+```{r 3 set up}
+# create the data frame
+kats <- data.frame(cats = c(-0.3, 0.42, 0.85, -0.45, 0.22, -0.12, 1.46, -0.79, 0.4, -0.07),
+                      happiness_score = c(-0.57,-0.10, -0.04, -0.29, 0.42, -0.92, 0.99, -0.62, 1.14, 0.33))
+```
+
+Please explain to me how you have fractions of cats and negative cats. I am *very* concerned 
+
+### 3a. Are these two variables correlated? What is the output of cor() here. What does a test show you?
+
+
+```{r 3a}
+# calculate an r matrix for the kats data frame
+cor(kats)
+
+```
+
+The output of `cor(kats)` is a correlation matrix showing the correlation coefficients between all the vectors in the data frame. 
+
+```{r 3a pt 2}
+cor.test(x = kats$cats, y = kats$happiness_score)
+```
+
+The p value derived from `cor.test()` is 0.03193. Using p < 0.05 as an indicator of significance, I would conclude that the two variables (cats and happiness) are correlated. (Following discussions this past week in class, however, I am no longer sure if this alpha value is truely appropriate for these data)
+
+### 3b. What is the SE of the correlation based on the info from cor.test()
+
+The output from `cor.test(kats)` does not explicitly give the SE, but it can be calculated by dividing the correlation coefficient (r) by the t value 
+
+```{r 3b}
+# Calculate SE
+
+SE <- 0.6758738/2.5938
+SE
+```
+
+The SE is 0.261.
+
+
+### 3c. Now, what is the SE via simulation?
+To do this, you’ll need to use cor() and get the relevant parameter from the output (remember - you get a matrix back, so, what’s the right index?), replicate(), and sample() or dplyr::sample_n() with replace=TRUE to get, let’s say, 1000 correlations. How does this compare to your value above?
+
+
+```{r 3c}
+
+# simulate r 1000 times
+cat_samp <- replicate(1000,
+          dplyr::sample_n(as_tibble(kats), size = 100, replace = TRUE) %>% 
+            cor %>% .[1,2]) %>% 
+  data.frame( r = .,
+              reps = 1:1000,
+              se = sqrt(
+    (1-.^2) / (8)
+  ))
+
+# show distribution of SE across simulations
+
+ggplot(cat_samp, aes(x = order(reps, decreasing = FALSE), y = se)) +
+  geom_point() +
+  geom_hline(yintercept = SE, color = "red") +
+  theme_minimal() +
+  labs(x = "Replicate",
+       y = "Standard Error")
+
+```
+
+The simulated values are all well clustered around the original SE (red line). The simulated SE values only range from approx. 0.22 - 0.30, which is a fairly small margin. 
+
+## 4. Species Richness and Nutrient Addition
+
+```{r 4 set up, message = FALSE}
+# Load data
+
+grass <- read_csv("https://whitlockschluter.zoology.ubc.ca/wp-content/data/chapter17/chap17q19GrasslandNutrientsPlantSpecies.csv")
+
+```
+
+
+### 4a. Draw a scatter plot of these data.
+Which variable should be the explanatory variable (x), and which should be the response variable (y)?
+
+```{r 4a}
+# plot the data
+
+ggplot(data = grass, aes(x = nutrients, y = species)) + 
+  geom_point() +
+  theme_minimal() +
+  labs(x = "Number of Nutrients Added",
+       y = "Number of Plant Species")
+
+
+```
+  
+This experiment set out to test the impact of nutrients on species richness in 10 plots (or it has been framed that way for this question). As such, the explanatory variable, x, should be the nutrients added, as this is the point of manipulation in the study. The response variable, y, should be the number of plant species, as this is the variable that may change as a result of x.
+
+### 4b. What is the rate of change in the number of plant species supported per nutrient type added? 
+Provide a standard error for your estimate.
+
+```{r 4b}
+
+# I could calculate b by hand... or I can build a model and type way less
+grass_lm <- lm(species ~ nutrients, data = grass)
+
+formattable::formattable(broom::tidy(grass_lm))
+```
+
+The rate of change is -3.34 +/- 1.10 plants per 1 nutrient increase. 
+
+### 4c. Add the least-squares regression line to your scatter plot.
+What fraction of the variation in the number of plant species is "explained" by the number of nutrients added?
+
+```{r 4c, message = FALSE}
+# plot grass_lm over scatter
+ggplot(data = grass, aes(x = nutrients, y = species)) + 
+  geom_point() +
+  theme_minimal() +
+  labs(x = "Number of Nutrients Added",
+       y = "Number of Plant Species") +
+  stat_smooth(method = "lm")
+
+# pull r^2 value
+summary(grass_lm) %>% .$r.squared
+
+```
+
+The amount of variation in species richness explained by the quantity of nutrients added to a given plot is 53.6% (R^2 = 0.536).
+
+
+### 4d. Test the null hypothesis of no treatment effect on the number of species
+
+```{r}
+# test for null h of slope is 0 --> no nutrient effect
+
+anova(grass_lm)
+```
+
+
+The p value is 0.01607, indicating that there is a significant effect of nutrient addition on species richness. 
+
+## 5. The Beetles
+
+```{r 5 set up, message=FALSE}
+
+# Load the data
+
+beetle <- read_csv("https://whitlockschluter.zoology.ubc.ca/wp-content/data/chapter17/chap17q25BeetleWingsAndHorns.csv")
+
+```
+
+### 5a. Use these results to calculate the residuals
+
+```{r 5a}
+# calculate residuals
+
+beetle_lm <- lm(wingMass ~ hornSize, data = beetle)
+
+fitted <- predict(beetle_lm)
+res <- residuals(beetle_lm)
+
+res
+
+```
+
+### 5b. Use your results from part a to produce a residual plot
+
+
+```{r 5b}
+qqplot(fitted, res)
+
+plot(beetle_lm, which = 1)
+
+ggplot(data = beetle, aes(x = hornSize, y = res)) + 
+  geom_point()
+```
+
+
+### 5c. Use the graph provided and your residual plot to evaluate the main assumptions of linear regression
+
+The assumptions that residual values must meet for a linear model to be valid:
+  1. The fitted and residual values should not have any kind of relationship
+  2. Residuals should follow a normal distribution
+  3. The surface should have a symmetrical peak
+  
+We can see from the graph above that there is a relationship between the fitted and residual variable. Looking at the other assumptions..
+  
+```{r}
+plot(beetle_lm, which = 2)
+```
+
+The qq plot looks ok. 
+
+```{r}
+hist(res)
+```
+  
+  And the residuals look vaguely normal (hard to really tell with such a small data set). 
+
+
+```{r}
+ggplot(beetle, aes(x = hornSize, y = wingMass)) +
+  geom_point()
+```
+
+We can also tell from the graph of the data that there are no major outliers, BUT we can also see that the data is not linear. This and the fact that there is also a relationship between the residuals and fitted values are violating assumptions of linear regressions. 
+
+### 5d. In light of your conclusions in part c, what steps should be taken?
+
+The first step to try to correct this data should be to preform a transformation on the y variable, such as a log transformation or a square root transformation. Non-parametric models could also be considered as an alternative to parametric statistics if transformation does not shift the data as needed for parametric analysis.
+
+### 5e. Do any other diagnostics misbehave?
+
+```{r}
+plot(beetle_lm, which = 1)
+plot(beetle_lm, which = 2)
+plot(beetle_lm, which = 4)
+plot(beetle_lm, which = 5)
+```
+
+There is at least one outlier that may be skewing the data. Transformation may solve this issue, and serious consideration should be put into the validity of the datum before removing it (should really probably only be done id there is a clear error - misreading of an instrument by a researcher or something similar) 
+
+## 6. My Shiny Teeth and Me
+
+```{r 6 set up, message=FALSE}
+
+teeth <- read_csv("https://whitlockschluter.zoology.ubc.ca/wp-content/data/chapter17/chap17q30NuclearTeeth.csv")
+
+```
+
+
+
+
+### 6a. What is the approximate slope of the regression line?
+
+```{r 6a}
+# calculate the regression and extract the slope
+
+teeth_lm <- lm(dateOfBirth ~ deltaC14, data = teeth)
+
+formattable::formattable(broom::tidy(teeth_lm))
+
+```
+The slope is approximately -0.05
+
+### 6b. Which pair of lines shows the confidence bands? 
+What do these confidence bands tell us?
+
+The confidence bands are shown in blue in the graph below. These indicate the precision of a calculated mean y for any given value of x. 
+
+### 6c. Which pair of lines shows the prediction interval? 
+What does this prediction interval tell us?
+
+The band in gray in the graph below is the prediction interval. This shows us the precision of the fit to predict the precision of a single y value predicted for any given x.
+
+### 6d. Using `predict()` and `geom_ribbon()` in ggplot2, reproduce the above plot showing data, fit, fit interval, and prediction interval.
+
+```{r 6d, message=FALSE}
+# fit a linear model to the data
+teeth_lm <- lm(dateOfBirth ~ deltaC14, data = teeth)
+
+# make a replicate of the graph from the textbook to reference in answers
+
+fit_teeth <- predict(teeth_lm,
+                     interval = "confidence") %>% 
+  as_tibble() %>% 
+rename(lwr_ci = lwr,
+       upr_ci= upr)
+
+teeth2 <- cbind(teeth, fit_teeth)
+head(teeth2)
+  
+# Prediction interval
+
+predict_teeth <- predict(teeth_lm,
+                         interval = "prediction") %>% 
+  as_tibble() %>% 
+  rename(lwr_pi = lwr,
+            upr_pi = upr,
+         pfit = fit)
+teeth2 <- cbind(teeth2, 
+        predict_teeth)  
+
+ggplot(teeth2, aes(x = deltaC14,
+                  y = dateOfBirth)) +
+  # prediction interval 
+  geom_ribbon(aes(ymin = lwr_pi, 
+                  ymax = upr_pi),
+              alpha = 0.3) + 
+  # fit interval 
+  geom_ribbon(aes(ymin = lwr_ci,
+                  ymax = upr_ci),
+              alpha = 0.5,
+              fill = "blue") +
+  stat_smooth(color = "red", method = "lm", alpha = 0) +
+  geom_point() +
+  theme_minimal() +
+  labs(x = "Change in C14",
+       y = "Date of Birth")
+  
+
+```
+
+
+## Extra Credit. 
+
+```{r EC set up, message = FALSE}
+deet <- read_csv("../data/17q24DEETMosquiteBites.csv")
+
+deet_plot <- ggplot(data=deet, aes(x=dose, y=bites)) + 
+  geom_point()
+
+deet_plot
+
+deet_mod <- lm(bites ~ dose, data=deet)
+
+#f-tests of model
+anova(deet_mod)
+
+#t-tests of parameters
+summary(deet_mod)
+
+#plot with line
+deet_plot + 
+  stat_smooth(method=lm, formula=y~x)
+
+```
+
+
+Now, look at vcov() applied to your fit. For example:
+
+```{r EC set up pt 2}
+vcov(deet_mod)
+```
+
+
+What you have here is the variance-covariance matrix of the parameters of the model. In essence, every time you larger slopes in this case will have smaller intercepts, and vice-verse. This maintains the best fit possible, despite deviations in the slope and intercept. BUT - what’s cool about this is that it also allows us to produce simulations (posterior simulations for anyone interested) of the fit. We can use a package like `mnormt` that let’s us draw from a multivariate normal distribution when provided with a vcov matrix. For example…
+
+
+```{r EC set up pt 3}
+library(mnormt)
+
+rmnorm(4, mean = coef(deet_mod), varcov = vcov(deet_mod))
+
+```
+
+
+### EC a. Fit simulations!
+
+Using `geom_abline()` make a plot that has the following layers and shows that these simulated lines match up well with the fit CI. 1) the data, 2) the lm fit with a CI, and 3) simulated lines. You might have to much around to make it look as good as possible.
+
+
+```{r EC a}
+
+deet_sims <- as.data.frame(rmnorm(100, mean = coef(deet_mod), varcov = vcov(deet_mod)))
+
+deet_plot + 
+  labs(x = "DEET Dose",
+       y = "Number of Bites") +
+  geom_abline(data = deet_sims, slope = deet_sims$dose, intercept = deet_sims$`(Intercept)`, size = 0.2, 
+              alpha = 0.2,
+              color = "blue") +
+  stat_smooth(method=lm, formula=y~x, color = "red") +
+  theme_minimal()
+
+```
+
+In the graph above, the red line is the linear model, the light grey band around it is the 95% confidence interval, the blue lines are the simulated models, and the black dots are the observed data. 
+
+
+
+
+
+
+
+
+
+
