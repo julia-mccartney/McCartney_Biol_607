@@ -5,7 +5,7 @@ output: html_document
 ---
 # Homework 6 {.tabset}
 
-This homework can also be found on [github]()
+This homework can also be found on [github](https://github.com/julia-mccartney/McCartney_Biol_607/blob/master/homework/06_McCartney_Julia_2020.Rmd)
 
 Libraries
 ```{r}
