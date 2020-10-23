@@ -1,0 +1,49 @@
+---
+author: "Julia"
+date: "10/18/2020"
+output: html_document
+---
+# Homework 6 {.tabset}
+
+This homework can also be found on [github]()
+
+Libraries
+```{r}
+library(readr)
+```
+
+
+
+## 0. Faded examples
+
+I feel pretty good about them
+
+## 1. Inference
+
+Would you say you naturally gravitate towards deductive or inductive inference? Why?
+
+I feel like I sit somewhere in the middle depending on what the situation is. If I am thinking about a system that is well studied and I have a good grasp on it and the factors that influence it, I think I lean more towards deductive. This is because I find it easier to come up with a theory to explain something. When I'm thinking of a system that is not well studied, I feel uncomfortable coming up with theories right off the bat and lean more towards inductive reasoning. All that being said, I can see where this can stifle novel thoughts about a well studied system (maybe creating some kind of confirmation bias?). I also feel like my understanding of how to design an experiment is heavily reliant on deductive reasoning, so in practice I likely fall into this category much more often. 
+
+
+## 2 Research planning
+We talked about strictly interpreted Popperian Flasification versus Lakatos’s view of a research program this week.
+
+### 2a Do you more strongly identify with one of these paradigms? 
+Why? +1 EC for direct quotes (if you want to do some additional reading)
+
+
+### 2b. How does your own research program fit into one of these paradigms?
+
+
+
+
+## 3. Grid Sampling
+
+Based on Friday’s lab, load up the pufferfish data and use grid sampling to find the MLE of the slope, intercept and residual SD of this model. Feel free to eyeball results from an lm() fit to get reasonable values. Try not to do this for a grid of more than ~100K points (more if you want!). It’s ok to be coarse. Compare to lm.
+
+```{r}
+# load data
+
+puffer <- read_csv("data/16q11PufferfishMimicry Caley & Schluter 2003.csv")
+```
+

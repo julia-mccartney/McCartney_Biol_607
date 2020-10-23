@@ -9,7 +9,7 @@ output: html_document
 #### Julia McCartney  
 #### Due 10/17/2020
 
-This homework's file can also be found on [Github]()
+This homework's file can also be found on [Github](https://github.com/julia-mccartney/McCartney_Biol_607/blob/master/homework/05_McCartney_Julia_2020.Rmd)
 
   
   Libraries Used
