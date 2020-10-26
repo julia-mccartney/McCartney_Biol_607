@@ -5,27 +5,31 @@ output: html_document
 ---
 # Homework 6 {.tabset}
 
+#### Julia McCartney  
+#### Due 10/23/2020
+
 This homework can also be found on [github](https://github.com/julia-mccartney/McCartney_Biol_607/blob/master/homework/06_McCartney_Julia_2020.Rmd)
 
 Libraries
-```{r}
+```{r libraries, message = FALSE}
 library(readr)
 library(tidyr)
 library(ggplot2)
 library(dplyr)
 library(profileModel)
 library(formattable)
+library(MASS)
 ```
 
 
 
-## 0. Faded examples
+#### 0. Faded examples
 
-I feel pretty good about them
+I feel pretty good about them. No issues here!
 
 ## 1. Inference
 
-Would you say you naturally gravitate towards deductive or inductive inference? Why?
+**Would you say you naturally gravitate towards deductive or inductive inference? Why?**
 
 I feel like I sit somewhere in the middle depending on what the situation is. If I am thinking about a system that is well studied and I have a good grasp on it and the factors that influence it, I think I lean more towards deductive. This is because I find it easier to come up with a theory to explain something. When I'm thinking of a system that is not well studied, I feel uncomfortable coming up with theories right off the bat and lean more towards inductive reasoning. All that being said, I can see where this can stifle novel thoughts about a well studied system (maybe creating some kind of confirmation bias?). I also feel like my understanding of how to design an experiment is heavily reliant on deductive reasoning, so in practice I likely fall into this category much more often. 
 
@@ -41,33 +45,37 @@ I would say the way I think about conducting experiments falls more along the li
 
 ### 2b. How does your own research program fit into one of these paradigms?
 
-One of the questions I'm interested in is understanding how bacterial communities and change assemble during/after a disturbance like disease - essentially do we see a stochastic or deterministic response? Because it's a bit more exploratory at this stage, I think (contrary to what I said before), this best fits in with Lakotos's view of a research program. We have a central theory that microbiome communities change as a result of disturbance during disease. Why that happens though is still unclear - does the microbiome independently react to pathogens?, does the host influence the community as an immune response? does the community change as a byproduct of an immune response? is there no shift reaction at all? 
+One of the questions I'm interested in is understanding how bacterial communities and change assemble during/after a disturbance like disease - essentially do we see a stochastic or deterministic response? Because it's a bit more exploratory at this stage, I think (contrary to what I said before), this best fits in with Lakotos's view of a research program. We have a central theory that microbiome communities change as a result of disturbance during disease. Why that happens though is still unclear - does the microbiome independently react to pathogens?, does the host influence the community as an immune response? does the community change as a byproduct of an immune response? is there no shift reaction at all? Then there are the questions about *how* the community is changing...
 
 I'm also interested in looking at the functional capacity of the microbiome (not just the taxonomic makeup), so that adds a whole other layer to the questions (Do we see a stochastic/deterministic response both at the taxonomic and functional levels? Just one? neither?).
 
-Additionally, all of this can vary by pathogen and host organism (but for now, I'm focused on Eastern Newts and *Batrachochytrium salamandrivorans*)
+Additionally, all of this can vary by pathogen and host organism (but for now, I'm focused on Eastern Newts and *Batrachochytrium salamandrivorans*). 
+
+When I was trying to visualize this, Lakotos's system (at least as I understand it) was naturally the easiest way for me to conceptualize all of the possibilities of what may be going on.
 
 
 ## 3. Grid Sampling
 
 Based on Friday’s lab, load up the pufferfish data and use grid sampling to find the MLE of the slope, intercept and residual SD of this model. Feel free to eyeball results from an lm() fit to get reasonable values. Try not to do this for a grid of more than ~100K points (more if you want!). It’s ok to be coarse. Compare to lm.
 
-```{r}
+```{r load, message = FALSE}
 # load data
 
 puffer <- read_csv("../data/16q11PufferfishMimicry Caley & Schluter 2003.csv")
 ```
 
-```{r 3 graph}
+```{r 3 graph, message= FALSE}
 #Graph the data to get a better sense of it
 ggplot(puffer,
        aes(x = resemblance, 
            y = predators)) +
   geom_point() +
-  geom_smooth(method = "lm")
+  geom_smooth(method = "lm") +
+  labs(x = "Resemblance to Puffer Fish",
+       y = "Number of Predator Visits")
 ```
 
-Looking at this fit, it seems like we have a positive slope (maybe 2-3) and an intercept around 5. Residual standard deviation looks to be around 3-5. We will use these estimates to calculate the maximum likelihood estimate for each parameter.
+Looking at this fit, it seems like we have a positive slope (maybe around 2-3) and an intercept around 5. Residual standard deviation looks to be around 3-5. We will use these estimates to set ranges for calculating the maximum likelihood estimate for each parameter.
 
 
 
@@ -86,7 +94,7 @@ MLE_lm <- function(xvar, yvar, res_sdev, slope, int){
 
 ```{r 3 grid sample}
 # grid sample
-puff_grid <- crossing(int = seq(1,5, length.out = 100),
+puff_grid <- crossing(int = seq(1,5, length.out = 100), # sorry its so big, the result was better with 100 points each
                   slope = seq(1,5, length.out = 100),
                   res_sd = seq(1,5, length.out = 100)) %>%
   rowwise(slope, int, res_sd) %>%
@@ -95,21 +103,23 @@ puff_grid <- crossing(int = seq(1,5, length.out = 100),
   ungroup()
 
 # get our max values
-puff_grid %>% filter(logLik == max(logLik)) %>% as.data.frame()
+puff_grid %>% filter(logLik == max(logLik)) %>% as.data.frame() %>% formattable()
 
 # Compare to the LM
-lm(predators ~ resemblance, data = puffer)
+puff_lm <- lm(predators ~ resemblance, data = puffer)
+
+formattable(puff_lm$coefficients)
 
 ```
 
 Looks like we came pretty close with our estimates!
 
 
-## Surfaces!
+## 4. Surfaces!
 Filter the dataset to the MLE of the SD. Plot the surface for the slope and intercept in whatever way you find most compelling. You might want to play around with zooming in to different regions, etc. Have fun!
 
 ```{r 4 filter}
-# First, the actual number is huge and r needs a direct output
+# First, the actual number is long and r needs a direct output
 max_vals <- puff_grid %>% filter(logLik == max(logLik)) %>% as.data.frame()
 
 #Filter the data
@@ -118,7 +128,7 @@ puff_max_res_sd <- puff_grid %>%
 
 ```
 
-```{r 4 graph, message = FALSE}
+```{r 4 graph, message = FALSE, warning=FALSE}
 
 # calculate profiles
 lik_prof_slope <- puff_max_res_sd %>% 
@@ -151,7 +161,7 @@ plot
 
 ```
 
-Ok lets zoom in on that for a second
+Ok lets zoom in on that 
 
 ```{r}
 # get better resolution
@@ -172,7 +182,25 @@ zoom_plot <-  ggplot(data = puff_max_res_sd %>%  filter(logLik > max(logLik) - 3
 zoom_plot
 ```
 
+And let's have some fun with it
 
+```{r fun plot, warning=FALSE}
+# make a 3d plot
+rast_plot <- ggplot(data = puff_max_res_sd %>%  filter(logLik > max(logLik) - 3),
+       aes(x = slope, y = int, fill = logLik)) +
+  geom_raster() + 
+  scale_fill_viridis_b()+
+  labs(x = "Slope",
+       y = "Intercept")
+
+rayshader::plot_gg(rast_plot +
+                     geom_line(data = lik_prof_slope %>%  filter(logLik > max(logLik) - 1.92),
+            aes(x = slope, y = int), color = "red") +
+  geom_line(data = lik_prof_int %>%  filter(logLik > max(logLik) - 1.92),
+            aes(x = slope, y = int), color = "orange"))
+
+
+```
 
 ## 5. GLM!
 Now, compare those results to results from glm. Show the profiles and confidence intervals from glm() for the slope and intercept. Also show how you validate assumptions.
@@ -200,7 +228,8 @@ qqline(puff_res)
 The data does deviate from the line (and looking at the qqnorm plot on its own, the data do not look very linear). However, the deviation isn't so big that we need to be worried (assumption tentatively maintained).
 
 ```{r 5 profile}
-plot(profile(puff_mod))
+puff_prof <- profile(puff_mod)
+plot(puff_prof)
 ```
 
 The profiles are straight lines, as they shold be. (Assumption maintained)
@@ -231,24 +260,4 @@ formattable(puff_grid %>% filter(logLik == max(logLik)) %>% as.data.frame())
 
 Our grid sampling results are pretty close to the GLM results!
 
-
-## EC 6. Get Outside of GLM! 
-So, often, we have more complex models than the above. There are a variety of optimizers out there, and packages for accessing them. One of the best is bbmle by Ecologist Ben Bolker (whose dad is emeritus at UMB in computer science! Go visit him! He’s fantastic!)
-
-Load up 'bbmle and try out mle2. It’s a bit different, in that the first argument is a function that minimizes the log likelihood (not maximizes). The second argument is a list of start values - e.g. list(slope = 2, intercept = 5, resid_sd = 2). Try and fit your model with mle2 using start values close to the actual estimates. Look at the summary and plot the profile. Note, you might get a lot of errors because it will try impossible values of your residual SD. Also, note thatyou’ll have to rewrite your likelihood function to return the negative log likelihood (or write a wrapper that does so). A small thing
-
-```{r}
-library(bbmle)
-mle2(MLE_lm, start = list(xvar = puffer$resemblance, yvar = puffer$predators, 
-                          res_sdev = 2.89, slope = 2.98, int = 1.93))
-
-
-
-```
-
-
-
-
-
-I had tried to teach myself how to do a GLMM to understand what was going on with some data over the summer (ill-advised, I clearly had no idea what I was doing). Ben Bolker's answers on cross-validated were always the most helpful!
 
