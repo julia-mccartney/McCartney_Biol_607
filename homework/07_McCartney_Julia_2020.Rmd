@@ -1,0 +1,19 @@
+---
+author: "Julia"
+date due: "10/30/2020"
+output: html_document
+---
+
+# Homework 7: Cross-Validation and Bayes {.tabset}
+
+#### Julia McCartney  
+#### Due 10/30/2020
+
+This homework's file can also be found on [Github]()
+
+  
+Libraries Used
+```{r Libraries}
+
+```
+
