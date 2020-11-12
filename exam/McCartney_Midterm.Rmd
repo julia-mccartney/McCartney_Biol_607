@@ -260,7 +260,7 @@ Cool. Now, write a function that will take what you did above, and create a plot
 
 Well, let's test that!
 
-```{r 2d, message = FALSE}
+```{r 2d, message = FALSE, warning = FALSE}
 
 # write a function using functions
 
@@ -296,9 +296,7 @@ We have discussed multiple inferential frameworks this semester. Frequentist NHS
 
 What do you feel is the inferential framework that you adopt as a scientist? Why? Include in your answer why you prefer the inferential tools (e.g. confidence intervals, test statistics, out-of-sample prediction, posterior probabilities, etc.) of your chosen worldview and why you do not like the ones of the other one. This includes defining just what those different tools mean, as well as relating them to the things you study. extra credit for citing and discussing outside sources - one point per source/point
 
----------------------
-
-This question has been asked a few times before and every time I struggle with where I really fit. Bayesian statistics are so new to me that, while I really like the concept, my default thinking is frequentist NHST as that is the only framework I've had to work until very recently.  
+### The Main Answer
 
 **Inductive vs Deductive Reasoning**
 
@@ -311,7 +309,7 @@ Defining the difference between Popper and Lakatos' research designs is a bit ha
 
   Now while I see validity and use for both inductive and deductive reasoning, I do have a slight preference for inductive tools over deductive tools. Mainly, this stems from the fact that I don't like that NHST doesn't tell us anything about the hypothesis other than (if significant) it is different from whatever hypothesis is tested. Whether I am using an F test to look at the ratio of variances or a t-test to determine if the coefficient of the parameter is 0 (no slope --> no relationship), the problem is the same. If the test indicates that there is a difference between the alternative hypothesis and the null, it doesn't tell us that the alternative we are testing is true (or to what degree it could be). Tf there is no difference, it doesn't tell us that our null is correct. I really like that with Bayesian techniques, we get a direct conclusion about the hypothesis - it feels much more concrete. I would rather know the degree of belief in an estimate of the influence of infection severity on disease outcome, than the probability that it is different from the null. For the same reasons, I prefer a credible interval to a confidence interval.
   
- When it comes to tools like cross-validation and model comparison, I don't have as strong of feelings. Going back to the example I just gave, if I'm looking at how infection severity in eastern newts (measured in genomic equivalents of **Batarachochytrium dendrobatidis** or **Batrachochytrium salamandrivorans** detected by qPCR) is influenced by factors like size (SVL and mass), starting microbiome species richness, environmental temperature, etc., I want to be able to compare different models to see which factors really are having an influence and which are not. Using AIC to decide the model with the maximum likelihood when I've generated several may be appropriate if I'm trying to determine if a factor is influential or not. I may also want to be able to understand how predictive my model is in order to better understand the risk of certain populations of newts. To do that, I would want to use some variation of cross-validation for my model. While I do philosophically have a preference for Bayesian methods, I have a need to use some deductive techniques to answer some of my questions. 
+ When it comes to tools like cross-validation and model comparison, I don't have as strong of feelings. Going back to the example I just gave, if I'm looking at how infection severity in eastern newts (measured in genomic equivalents of *Batarachochytrium dendrobatidis* or *Batrachochytrium salamandrivorans* detected by qPCR) is influenced by factors like size (SVL and mass), starting microbiome species richness, environmental temperature, etc., I want to be able to compare different models to see which factors really are having an influence and which are not. Using AIC to decide the model with the maximum likelihood when I've generated several may be appropriate if I'm trying to determine if a factor is influential or not. I may also want to be able to understand how predictive my model is in order to better understand the risk of certain populations of newts. To do that, I would want to use some variation of cross-validation for my model. While I do philosophically have a preference for Bayesian methods, I have a need to use some deductive techniques to answer some of my questions. 
 
 
 ## 4. Bayes Theorem
