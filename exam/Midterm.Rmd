@@ -1,0 +1,814 @@
+---
+author: "Julia"
+date: "11/4/2020"
+output: html_document
+---
+
+# Midterm {.tabset}
+
+#### Julia McCartney  
+#### Due Nov 13th 2020
+
+This Midterm's file can also be found on [Github]()
+
+
+
+### Libraries
+
+```{r libraries, message = FALSE}
+library(readr)
+library(dplyr)
+library(purrr)
+library(lubridate)
+library(tidyr)
+library(ggplot2)
+library(gganimate)
+library(brms)
+library(bayesplot)
+library(cowplot)
+```
+
+
+
+
+
+## 1. Sampling your system {.tabset}
+
+
+Each of you has a study system your work in and a question of interest. Give an example of one variable that you would sample in order to get a sense of its variation in nature. Describe, in detail, how you would sample for the population of that variable in order to understand its distribution. Questions to consider include, but are not limited to: Just what is your sample versus your population? What would your sampling design be? Why would you design it that particular way? What are potential confounding influences of both sampling technique and sample design that you need to be careful to avoid? What statistical distribution might the variable take, and why?
+
+---------
+
+  The study system I am currently working in is the skin microbiome of Eastern Newts (*Notophthalmus viridescens*). Generally, I am looking to understand how the microbial community varies across individuals under various conditions (which can be wildly different depending on if the experiment in question is an exposure experiment, field survey, etc). For this question, we will assume we are sampling to get an understanding of how the composition of the microbiome of juvenile Eastern Newts changes seasonally, with alpha diversity (species richness) of the microbiome as the variable in question.  
+
+ We will define the population as all individuals within a regional area with similar seasonal patterns (i.e. Northeast). I would  include at least 5 sites, with sites being separated by at least 5 kilometers (Eastern newts in their terrestrial juvenile life stage are unlikely to travel that far - that we are aware of). Up to 20 individuals will be sampled at each site, with sampling occurring for 1 hour, or until 20 individuals are caught - whichever is first. All individuals will be caught in kept in whirlpack bags until the sampling period is over, to prevent unintentionally recapturing and re-sampling the same individuals at each time point. Individuals would be sampled in the Spring, Summer, and Fall (we could also do Winter if we were working further south. Fun fact, Eastern Newts have a geographic range that spans from Maine down to Florida!)
+ 
+  Individuals will be rinsed with 15 mL sterile artificial pond water, then swabbed with sterile cotton swabs. This is done to remove transient microbes that are present due to what the individual has recently been in contact with, but are not actually part of the core skin microbiome. The swabbing regime is: 5 passes on the dorsal and ventral surfaces, and 5 passes on each foot, for a total of 30 passes. Gloves are changed between individuals to prevent cross-contamination. Other biometrics, such as snout to ventral length (SVL), weight, and gender, will also be collected at this time. 
+  
+  Now we get back to the lab and start to process our swabs, which is really an extension of sampling. Considerations for swab processing and the resulting sequencing data include:  
+  * extraction method (can be biased for certain kinds of bacteria),   
+  * what region to sequence (and what primers to use)  
+  Fortunately, there is wide consensus on many of these methods. I would use the IBI g-max extraction kit (yields same results as Qiagen kits, which have become the gold standard), and use primers as defined by the earth microbiome protocol for the V4 region of the 16S rRNA gene (easily comparable to many other studies and widely used methodology). 
+
+*Now* we are done sampling!
+
+Once we  have our sOTUs and have assigned taxonomy, we can calculate and compare alpha diversity. For the sake of this example, we can think about species richness (just presence/absence, so the compositional nature of the data shouldn't be an issue). I would expect that the metric of species richness would follow a poisson distribution, as it is count data. Paired with other information (biometrics from individuals or site data, like proximity to roadways or farmland), we can test correlations or models to see if species richness is associated with/predicts health status, nitrogen levels in the pond, etc. 
+
+
+### A bit more detail
+
+I was unsure of whether I should include the following because it could be thought of as data processing/analysis, but it can also be very important in determining what we get for other metrics, though not species richness specifically. The line between where sampling stops and data analysis ends is a bit grey (should I have stopped my explanation above after the swab was collected? Should I have included the text below in the main answer?) The process is much more complicated than going out and taking species counts directly in the field (which can still be a complicated process on it's own!), and how the data is processed post sequencing can influence the results. If you thought my answer above was sufficient, then ignore this. If you want more detail about sequencing data complications, read on.
+
+------------  
+  
+Here we will talk about the great problem of microbiome analysis - compositional data.   
+    
+![](https://media.giphy.com/media/MlNSich1jeAzm/giphy.gif)
+  
+    
+  Each illumina sequencing run (which is fairly standard in the field) only has so many spaces for strands of DNA from the prepared library to attach to the flow cell and be sequenced - thus the data we actually get to work with is itself a sample of our sample, and the number of reads per sequence that we get out are not true counts of what was in the . Abundances are all relative and do not reflect the true count of the microbes. Additionally, most statistical tests do not account for the compositional nature of the data and some argue strongly against using them, though they are commonly used in the literature.
+  
+How do you deal with compositional data in analysis?  
+   **1) Rarefy**  
+    Rarefaction is the process of sampling the data (yes again) to normalize it to the same number of total reads. Whether this actually does anything to deal with the compositional nature of the data seems iffy to me.  
+   **2) CoDa methods**  
+    Despite the statistical backing, this appears to me to be the least common method. CoDa stands for Compositional Data and refers to using methods of transformation and use of specific related stats (like Euclidian distances instead of more traditional beta diversity methods like Bray-Curtis) that can work with these transformed data. The idea is that using log-ratios of the data, you can get around the issue of compositionality and proceed with analysis (kind of) like normal.   
+   **3) You just... don't?**   
+    Some argue against rarefaction, as you are loosing data and potentially rare microbes in the process. Additionally, some who don't rarefy also won't follow CoDa methods and instead use more traditional metrics and statistics. So ultimately nothing is done to account for compositionality.   
+   **4) Other Methods and Statistical Tools **  
+    Some people have tried to account for compositionality (or are robust to it) in microbiome-specific statistical tools and packages (ex: SparCC, ALDEx2). Some of these methods are well received and widely used, others are not. Other methods could mean doing something before sequencing so we can back calculate true abundances (plasmid spike in).   
+  
+All of these are seen in the literature, with rarefaction seemingly being the most common practice - at least for amphibian microbiomes. I am personally interested in learning to use CoDa methods, but the math is a bit... impentitrible. I've got a lot to learn for that!
+
+(For the data I am working with for my final project I will be looking at presence/absence data for co-occurrance networks because ITS sequencing data for fungi has it's own issues related to true abundance - THANKFULLY. No worries about abundance data for me!)
+
+
+## 2. Data Reshaping and Visualization
+
+Johns Hopkins has been maintaining one of the best Covid-19 timseries data sets out there. The data on the US can be found here with information about what is in the data at https://github.com/CSSEGISandData/COVID-19/tree/master/csse_covid_19_data
+
+### 2. Access
+Download and read in the data. Can you do this without downloading, but read directly from the archive (+1).
+
+```{r 2a, message = FALSE}
+#Download data
+covid <- read_csv("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_US.csv")
+
+#prep for pop merge
+FIPS <- read_csv("State_FIPS_Codes.csv")
+# from https://www.nrcs.usda.gov/wps/portal/nrcs/detail/?cid=nrcs143_013696
+covid_plus <- merge(covid, FIPS, by.x = "Province_State", by.y = "Name")
+
+#Download estimated population data from census 
+pop_data <- read_csv("https://www2.census.gov/programs-surveys/popest/datasets/2010-2019/national/totals/nst-est2019-alldata.csv")
+# filter to most recent
+pop_data_2019 <- pop_data %>% 
+  select(STATE, NAME, POPESTIMATE2019)
+
+#Merge pop data (note this is for the EC for the next question)
+covid_plus <- merge(covid_plus, pop_data_2019, by.x = "Province_State", by.y = "NAME")
+
+
+```
+
+
+### 2b. It’s big and wide!
+
+The data is, well, huge. It’s also wide, with dates as columns. Write a function that, given a state, will output a time series (long data where every row is a day) of cumulative cases in that state as well as new daily cases.
+
+Note, let’s make the date column that emerges a true date object. Let’s say you’ve called it date_col. If you mutate it, mutate(date_col = lubridate::mdy(date_col)), it will be turned into a date object that will have a recognized order. {lubridate} is da bomb, and I’m hoping we have some time to cover it in the future.
+
++5 extra credit for merging it with some other data source to also return cases per 100,000 people.
+
+
+```{r 2b, message = FALSE}
+# write a function to get cumulative cases by state
+
+# Write a function that
+cases2date <- function(state){
+  #given a state
+  state_sub <- covid_plus %>% 
+    filter(Province_State == state)%>% 
+    #will output a time series (long data where every row is a day) 
+    pivot_longer(cols = contains("/"), 
+                names_to = "date",
+                 values_to = "cases") %>% # of cummulative cases in that state
+    mutate(date = lubridate::mdy(date)) %>% 
+# as well as new daily cases
+    arrange(date, .by_group = TRUE) %>% 
+    group_by(date, Province_State, POPESTIMATE2019) %>% 
+    summarise(cases_to_date = sum(cases)) %>% 
+    group_by(Province_State) %>% 
+    mutate(daily_cases = cases_to_date - lag(cases_to_date, k = 1),
+           new_cases_100k = (daily_cases/POPESTIMATE2019)*100000,
+           total_cases_100k = (cases_to_date/POPESTIMATE2019)*100000) 
+    # and a couple of other fun stats
+  state_sub
+}
+
+#test
+Illinois_cases <- cases2date("Illinois")
+formattable::formattable(head(Illinois_cases))
+
+```
+Looks good!
+
+### 2C. Let's get Visual!
+
+Great! Make a compelling plot of the timeseries for Massachusetts! Points for style, class, ease of understanding major trends, etc. Note, 10/10 only for the most killer figures. Don’t phone it in! Also, note what the data from JHU is. Do you want the cumulatives, or daily, or what?
+
+
+```{r 2c Visualize, message=FALSE, warning=FALSE}
+
+mass_cases <- cases2date("Massachusetts")
+
+#here's a function, have fun!
+cases_thru_time_umass <- function(data, cases_col, mycolor = "blue", y_axis, y1 = 2700, y2 = 2700, y3 = 1900){
+# the basics
+ggplot(data = data,
+       aes(x = date, y = {{cases_col}}), color = mycolor) +
+  geom_line(color = mycolor) +
+  labs(x = "Date",
+       y = y_axis,
+      caption = "Data from JHU CSSE COVID-19 Dataset") +
+  theme_minimal() +
+# UMass timeline
+  geom_vline(xintercept = lubridate::mdy("03/11/2020")) + 
+  geom_vline(xintercept = lubridate::mdy("06/22/2020")) +
+  geom_vline(xintercept = lubridate::mdy("10/24/2020")) + # ish? *this* is the email i couldn't find
+  annotate(geom="text", x=lubridate::mdy("02/10/2020"), 
+             y=y1, label="UMass Closes") +
+  annotate(geom="text", x=lubridate::mdy("07/29/2020"), 
+             y=y2, label="UMass Announces\nRemote Fall Term") +
+  annotate(geom="text", x=lubridate::mdy("08/24/2020"), 
+             y= y3, label="UMass Announces\nRemote Spring Term", hjust= .2) +
+# add animations!
+  transition_reveal(date) +
+  ease_aes("linear")
+}
+
+# test the function
+cases_thru_time_umass(data = mass_cases, cases_col = daily_cases, mycolor = "salmon", y_axis = "Daily New Cases")
+
+# and a general non-UMass version
+cases_thru_time <- function(data, cases_col, mycolor = "blue", y_axis){
+# the basics
+  ggplot(data = data,
+       aes(x = date, y = {{cases_col}}), color = mycolor) +
+  geom_line(color = mycolor) +
+  labs(x = "Date",
+       y = y_axis,
+      caption = "Data from JHU CSSE COVID-19 Dataset") +
+  theme_minimal() +
+# add animations!
+  transition_reveal(date) +
+  ease_aes("linear")
+}
+
+# Test function
+cases_thru_time(data = mass_cases, cases_col = daily_cases, mycolor = "blue", y_axis = "Total Cases")
+
+
+# A version that looks at both day by day cases and total cumulative cases, or whatever two stats you want to compare
+
+master_cases_thru_time <- function(data, cases_col, cases_col2, y_axis, y_axis2, y1 = 2700, y2 = 2700, y3 = 1900){
+  
+normalizer <- max(na.omit(cases_col2)) / max(na.omit(cases_col))
+  ggplot(data = data,
+       aes(x = date, y = cases_col)) +
+  geom_line(aes(color = y_axis)) +
+      geom_line(aes(y = cases_col2 / normalizer, color = y_axis2)) +  
+    scale_y_continuous(
+    # Features of the first axis
+    name = y_axis,
+    # Add a second axis and specify its features
+    sec.axis = sec_axis(~.*normalizer, name= y_axis2)
+  ) + 
+    labs(x = "Date",
+      caption = "Data from JHU CSSE COVID-19 Dataset",
+      color = "Data") +
+  theme_minimal() +
+    theme(legend.position = "bottom") +
+# UMass timeline
+  geom_vline(xintercept = lubridate::mdy("03/11/2020")) + 
+  geom_vline(xintercept = lubridate::mdy("06/22/2020")) +
+  geom_vline(xintercept = lubridate::mdy("10/24/2020")) + # ish? *this* is the email i couldn't find
+  annotate(geom="text", x=lubridate::mdy("02/08/2020"), 
+             y=y1, label="UMass Closes") +
+  annotate(geom="text", x=lubridate::mdy("08/01/2020"), 
+             y=y2, label="UMass Announces\nRemote Fall Term") +
+  annotate(geom="text", x=lubridate::mdy("08/14/2020"), 
+             y= y3, label="UMass Announces\nRemote Spring Term", hjust= .2) +
+# add animations!
+  transition_reveal(date) +
+  ease_aes("linear")
+  
+  
+}
+
+master_cases_thru_time(data = mass_cases, cases_col = mass_cases$daily_cases, cases_col2 = mass_cases$cases_to_date, y_axis = "Daily New Cases", y_axis2 = "Total Cases" )
+
+
+```
+
+**Interesting Note** - In the original data, some of the covid case numbers go *down* on September 3rd (hence why there is a dip below 0 for daily new cases). Someone must have put some numbers in wrong, I guess?
+
+
+### 2D. At our fingertips 
+
+Cool. Now, write a function that will take what you did above, and create a plot for any state - so, I enter Alaska and I get the plot for Alaska! +2 if it can do daily or cumulative cases - or cases per 100,000 if you did that above. +3 EC if you highlight points of interest - but dynamically using the data. Note, you might need to do some funky stuff to make things fit well in the plot for this one. Or, meh.
+
+Well, let's test that!
+
+```{r 2d, message = FALSE}
+
+# write a function using functions
+
+state_plot <- function(state = "Alaska", which_cases_col = 6, my_color = "blue"){
+  # get case data for the selected state
+  state_data <- cases2date(state)
+  # plot
+  
+  name_col <- as.name(names(dplyr::select(state_data, 
+                                                   names(state_data)[which_cases_col])[2]))
+  
+  plot <- cases_thru_time(data = state_data, 
+                          cases_col = eval(as.name(name_col)), # don't ask me how this works, I just know it does
+                          mycolor = my_color, 
+                          y_axis = names(select(state_data, names(state_data)[which_cases_col])[2])) 
+  plot + labs(title = state)
+}
+
+
+#NOTE - use 4-7 for which_cases_col to get different graphs!
+state_plot(state = "Alaska", which_cases_col = 4)
+
+state_plot(state = "New York", which_cases_col = 6)
+
+
+```
+
+
+
+## 3. Get philosophical
+
+We have discussed multiple inferential frameworks this semester. Frequentist NHST, Likelihood and model comparison, Baysian probabilistic thinking, Assessment of Predictive Ability (which spans frameworks!), and more. We’ve talked about Popper and Lakatos. Put these pieces of the puzzle together and look deep within yourself.
+
+What do you feel is the inferential framework that you adopt as a scientist? Why? Include in your answer why you prefer the inferential tools (e.g. confidence intervals, test statistics, out-of-sample prediction, posterior probabilities, etc.) of your chosen worldview and why you do not like the ones of the other one. This includes defining just what those different tools mean, as well as relating them to the things you study. extra credit for citing and discussing outside sources - one point per source/point
+
+---------------------
+
+This question has been asked a few times before and every time I struggle with where I really fit. Bayesian statistics are so new to me that, while I really like the concept, my default thinking is frequentist NHST as that is the only framework I've had to work until very recently.  
+
+**Inductive vs Deductive Reasoning**
+
+Defining the difference between Popper and Lakatos' research designs is a bit hard to wrap my head together because they seem to me to be two different ways of stating the same thing. You may be working in a frequentist framework but studying something that is not directly measureable - what can you do other than something like Lakatos' design,  and test alternate hypotheses without testing the core tenants? Do we not use inductive reasoning to come up with hypotheses about how the world works, then use deductive reasoning to flesh out these predictions? Maybe I'm missing something important here, but the two types of reasoning just seem like part of the same process in science. 
+  For example, let's say you were studying a new organism. You may have a few observations about it and can use inductive reasoning to make some broad hypothesis about its life history, diet, etc. (This is inductive). Then once you have established your hypotheses, you would go gather more observations to deduce the truth of the claims (i.e. is this organism really a carnivore or is it an omnivore?  Is arboreal or terrestrial, or is both at different life stages?). Along the way, you may make some observations that, through inductive reasoning, leads you to come up with new hypotheses, that you then test. You can think of this happening in a straight line or you can think of this as adding to the "core" of Lakatos' research paradigm as you come up with and test new auxiliary hypotheses. Bigger picture thinking to me makes more sense as an inductive process while thinking about the details seems intuitively deductive. 
+  Maybe that means I fall along the lines of deductive thinking in the setting you wanted us to talk about. I'm not sure. (But the two aren't entirely independent in a scientific context in my head).   
+  Maybe the issue is that I disagree on some level with the question you're asking (or at least how I am interpreting it). I'm struggling with the idea that I am being asked to choose one concept which I fall in line with. I see both having their places in different contexts, and in picking one feel like I'm limiting myself in terms of how to think about an problem or observation and the kind of analysis I would do. If it is appropriate for my data and the question I'm asking to do cross-validation, then I should do cross-validation. If it's appropriate for me to do inductive model comparison, then I should do inductive model comparison. Doing one does not prevent me from doing another later down the line where needed - science has no true endpoint.  
+
+**The Tools**  
+
+  Now while I see validity and use for both inductive and deductive reasoning, I do have a slight preference for inductive tools over deductive tools. Mainly, this stems from the fact that I don't like that NHST doesn't tell us anything about the hypothesis other than (if significant) it is different from whatever hypothesis is tested. Whether I am using an F test to look at the ratio of variances or a t-test to determine if the coefficient of the parameter is 0 (no slope --> no relationship), the problem is the same. If the test indicates that there is a difference between the alternative hypothesis and the null, it doesn't tell us that the alternative we are testing is true (or to what degree it could be). Tf there is no difference, it doesn't tell us that our null is correct. I really like that with Bayesian techniques, we get a direct conclusion about the hypothesis - it feels much more concrete. I would rather know the degree of belief in an estimate of the influence of infection severity on disease outcome, than the probability that it is different from the null. For the same reasons, I prefer a credible interval to a confidence interval.
+  
+ When it comes to tools like cross-validation and model comparison, I don't have as strong of feelings. Going back to the example I just gave, if I'm looking at how infection severity in eastern newts (measured in genomic equivalents of **Batarachochytrium dendrobatidis** or **Batrachochytrium salamandrivorans** detected by qPCR) is influenced by factors like size (SVL and mass), starting microbiome species richness, environmental temperature, etc., I want to be able to compare different models to see which factors really are having an influence and which are not. Using AIC to decide the model with the maximum likelihood when I've generated several may be appropriate if I'm trying to determine if a factor is influential or not. I may also want to be able to understand how predictive my model is in order to better understand the risk of certain populations of newts. To do that, I would want to use some variation of cross-validation for my model. While I do philosophically have a preference for Bayesian methods, I have a need to use some deductive techniques to answer some of my questions. 
+
+
+## 4. Bayes Theorem
+
+I’ve referenced the following figure a few times. I’d like you to demonstrate your understanding of Bayes Theorem by hand (e.g. calculate it out and show your work - you can do this all in R, I’m not a monster) showing what is the probability of the sun exploding given that the device said yes. Assume that your prior probability that the sun explodes is p(Sun Explodes) = 0.0001 (I’ll leave it to you to get p(Sun Doesn’t Explode). The rest of the information you need - and some you don’t - is in the cartoon - p(Yes | Explodes), p(Yes | Doesn’t Explode), p(No | Explodes), p(No | Doesn’t Explode).
+
+
+```{r}
+# we want p(sun_exp | yes)
+
+# The information we were given
+p_sun_exp <- 0.0001
+p_sun_still_there <- 1-0.0001
+
+two_sixes <- (1/6)^2
+everything_else <- 1 - two_sixes
+
+# We want the probability of that the sun will explode, given that the device said yes ( and is not lying)
+
+# posterior  = (likelihood*prior)/prob_data
+
+#where:
+
+# the likelihood is the probability that the device said yes (without lying ), given that the sun is exploding (exploded? I'm not sure we have time to do this if the sun is  exploding)
+likelihood <- everything_else
+
+# the probability of the data (getting a yes)
+prob_data <- everything_else*p_sun_exp + p_sun_still_there*two_sixes
+
+# so we get 
+posterior <- (likelihood*p_sun_exp)/prob_data
+posterior
+
+```
+
+### 4a. EC: Why is this a bad parody of frequentist statistics?
+
+It gets at the idea that people can blindly follow p values without really thinking about the data, but ignores the fact that most people wouldn't base the probability of the sun exploding based off of the roll of two dice. Where is the criticism on reliance on one sample to be representative? The need for large samples? Deterministic thinking? I know a frequentist wouldn't factor the probability of the sun exploding in as a *prior*, but they definitely wouldn't be making decisions about what is and isn't happening without considering that fact (if known) or otherwise trying to take it into account. 
+
+
+## 5. Quailing at the Prospect of Linear Models
+
+I’d like us to walk through the three different ‘engines’ that we have learned about to fit linear models. To motivate this, we’ll look at Burness et al.’s 2012 study "Post-hatch heat warms adult beaks: irreversible physiological plasticity in Japanese quail http://rspb.royalsocietypublishing.org/content/280/1767/20131436.short the data for which they have made available at Data Dryad at http://datadryad.org/resource/doi:10.5061/dryad.gs661. We’ll be looking at the morphology data.
+
+
+```{r 5 Load Data, message = FALSE}
+# Get Data
+quail <- read_csv("../data/Burness_Morphology_data.csv")
+
+```
+
+
+### 5a. Three Fits
+
+To begin with, I’d like you to fit the relationship that describes how Tarsus (leg) length predicts upper beak (Culmen) length. Fit this relationship using least squares, likelihood, and Bayesian techniques. For each fit, demonstrate that the necessary assumptions have been met. Note, functions used to fit with likelihood and Bayes may or may not behave well when fed NAs. So look out for those errors.
+
+
+```{r 5a data prep, message = FALSE}
+# prep data
+quail <- quail %>% 
+  drop_na(`Culmen (mm)`,`Tarsus (mm)`) %>% 
+  rename(culmen_mm = `Culmen (mm)`,
+         tarsus_mm = `Tarsus (mm)`)
+
+# visualize
+quail_plot <- ggplot(data = quail,
+       aes(x = tarsus_mm,
+           y = culmen_mm)) +
+  geom_point() +
+  theme_minimal() +
+  labs(x = "Tarsus (mm)",
+       y = "Culmen (mm)")
+quail_plot
+
+```
+
+### Least Squares
+
+```{r 5a LS, warning=FALSE}
+tarsus_lik_lm <- lm(culmen_mm ~ tarsus_mm,
+                     data = quail)
+
+# Assumptions
+
+# Simulated pretty well!
+simulate(tarsus_lik_lm, nsim = 100) %>% 
+  pivot_longer(cols = everything(),
+               names_to = "sim", values_to = "culmen_mm") %>% 
+  ggplot(aes(x = culmen_mm)) +
+  geom_density(aes(group = sim), lwd = 0.2) +
+  geom_density(data = quail, color = "blue", lwd = 2)
+
+plot(tarsus_lik_lm, which = 1)
+plot(tarsus_lik_lm, which = 2)
+
+# f-test of model
+anova(tarsus_lik_lm)
+
+# t-tests of parameters
+summary(tarsus_lik_lm)
+
+# tarsus size seems to be significantly correlated with the culmen size
+
+# Plot with line
+# Appears to fit well
+quail_plot +
+  stat_smooth(metod = lm, formula = y ~ x)
+```
+
+
+### Maximum Likelihood Estimate
+
+```{r 5a MLE}
+tarsus_mle <- glm(culmen_mm ~ tarsus_mm,
+                     family = gaussian(link = "identity"), 
+                     data = quail)
+# Assumptions
+mle_fit <- predict(tarsus_mle)
+mle_res <- residuals(tarsus_mle)
+
+# Doesn't seem like there is any relationship
+qplot(mle_fit, mle_res)
+
+#qqplots look ok
+qqnorm(mle_res)
+qqline(mle_res)
+
+# Looks Linear
+plot(profile(tarsus_mle))
+
+# Assumptions of the model are met!
+```
+
+
+### Baysian Model
+
+```{r 5a baysian, message=FALSE}
+# fit Bayesian Model
+quail_bayes <- brm(culmen_mm ~ tarsus_mm,
+                   family = gaussian(link = "identity"), 
+                   data = quail,
+                   chains = 4,
+                   seed = 2020)
+
+# The chains and posteriors look good
+plot(quail_bayes)
+
+# Rhat values look like they are very close to 1
+bayesplot::mcmc_rhat(rhat(quail_bayes))
+
+# No issues with autocorrelation here!
+bayesplot::mcmc_acf(as.data.frame(quail_bayes))
+
+# Model assumptions
+bayes_fit <- fitted(quail_bayes) %>%  as.data.frame()
+bayes_res <- residuals(quail_bayes) %>%  as.data.frame()
+
+# Doesn't seem like there is any relationship
+qplot(bayes_fit$Estimate, bayes_res$Estimate)
+
+# A bit more oblong than I've seen before but otherwise ok
+pp_check(quail_bayes, type = "scatter")
+
+# A little off at the tails but otherwise ok
+qqnorm(bayes_res$Estimate)
+qqline(bayes_res$Estimate)
+
+# not looking so great
+shapiro.test(bayes_res$Estimate)
+
+# but the error looks normal
+pp_check(quail_bayes, type = "error_hist")
+
+# Chains fit to posterior and data well
+pp_check(quail_bayes, type = "stat_2d", test = c("mean", "sd"))
+pp_check(quail_bayes)
+
+# Getting the coefficients, validating Rhat assessment
+summary(quail_bayes)
+
+# Confidence intervals - generally pretty tight intervals
+posterior_interval(quail_bayes)
+
+# Visualize - looks like a good fit!
+
+quail_chains <- as.data.frame(quail_bayes)
+
+quail_plot +
+  geom_abline(intercept = quail_chains[,1], slope = quail_chains[,2], alpha = 0.1, color = "lightgrey") +
+  geom_abline(intercept=fixef(quail_bayes)[1], slope = fixef(quail_bayes)[2], color = "red") 
+
+# Assumptions of the model are met!
+
+```
+
+
+### 5b. Three Interpetations
+
+OK, now that we have fits, take a look! Do the coefficients and their associated measures of error in their estimation match? How would we interpret the results from these different analyses differently? Or would we? Note, confint works on `lm` objects as well.
+
+```{r 5b, message = FALSE}
+# format data to be able to work with it
+mle_tib <- as_tibble(summary(tarsus_mle)$coefficients[,1:2]) %>% 
+  mutate(Value = c("Intercept", "Tarsus (mm)")) %>%
+  merge(
+    (as.data.frame(confint(tarsus_mle)) %>% 
+       mutate(Value = c("Intercept", "Tarsus (mm)"))), by = "Value"
+  ) %>% 
+  rename("Error" = `Std. Error`,
+         "Lower 95% CI" = `2.5 %`,
+         "Upper 95% CI" = `97.5 %`) %>% 
+  mutate(Model = "Maximum Likelihood Estimate")
+
+# more formatting
+ls_tib <- as_tibble(summary(tarsus_lik_lm)$coefficients[,1:2]) %>% mutate(Value = c("Intercept", "Tarsus (mm)")) %>% 
+  merge(
+    (as.data.frame(confint(tarsus_lik_lm)) %>% 
+       mutate(Value = c("Intercept", "Tarsus (mm)"))), by = "Value"
+    ) %>% 
+  rename("Error" = `Std. Error`,
+         "Lower 95% CI" = `2.5 %`,
+         "Upper 95% CI" = `97.5 %`) %>% 
+  mutate(Model = "Least Squares")
+
+# even more formatting
+bayes_tib <- as_tibble(summary(quail_bayes)$fixed[,1:4]) %>% 
+  mutate(Value = c("Intercept", "Tarsus (mm)")) %>%
+  rename("Error" = `Est.Error`,
+         "Lower 95% CI" = `l-95% CI`,
+         "Upper 95% CI" = `u-95% CI`) %>% 
+  mutate(Model = "Bayesian")
+
+# Bring together the values of interest in a table
+
+formattable::formattable(mle_tib %>% 
+  add_row(ls_tib) %>% 
+  add_row(bayes_tib) %>% 
+    relocate(Model))
+
+```
+
+**Coefficients**  
+The intercept values for the LS and MLE models are exactly the same to 8 decimal places, as are the values for the slope. The Bayesian values are very similar, but just slightly higher for the intercept and slightly lower for the slope. Overall, all three techniques produced incredibly similar models. 
+
+**Error Values**  
+As with the coefficients, the error values for the LS and MLE models are identical. The error values for the Bayesian model were *slightly* lower for both the slope and intercept, but all models had very similar error values. 
+
+**Confidence/Credible Intervals**  
+The confidence intervals varied for all three models, but again were very similar to each other. The Bayesian model had the largest interval for the intercept, but the smallest for the slope, followed by the MLE, then LS models - though it is worth noting that the LS and MLE model CIs were nearly identical. 
+
+**Interpreting the Results**  
+Each model used a slightly different (or in the case of Bayes, very different) method to fit the data, so the interpretation can vary. For the estimates, the same basic number is being calculated, so in practice these results can be interpreted similarly - the rate of change in per mm of culmen length correlates with a ~ 0.37 mm change in tarsus length. The error values, while calculated differently, also can be interpreted in the same way - the slope is ~ 0.37 +/- 0.006, or the rate of tarsus length change per mm of culmen length change is ~ 0.37 +/- 0.006.
+
+Once we get into the confidence/credible intervals, however, the interpretations change. Whereas the frequentist statistics are looking at a window of values where, with repeated sampling, we would find the true parameter value within 95% of the time, the Bayesian approach focuses on the degree of belief in a specific value. Bayesian credible intervals indicate the window in which 95% of all probable values (having a probability density greater than 0) are found. So when we look at the CI values in the chart, the LS and MLE models tell us that if we were to sample quail populations many times, we would see 95% of our estimated slopes fall within the range of 0.359 and 0.385. Our Bayesian model tells us that, given any estimate of the slope, we can assign a degree of belief in it, from 0 to 1 (theoretically, though with the probability spread out, the maximum value will likely be less than 0.5), and 95% of all our probability (total of 1 or 100%) is found within 0.360 and 0.385. In plain English, the most believable (or credible!) estimate values fall within the credible interval. 
+
+### 5c. Everyday I'm Profilin'
+
+For your likelihood fit, are your profiles well behaved? For just the slope, use grid sampling to create a profile. You’ll need to write functions for this, sampling the whole grid of slope and intercept, and then take out the relevant slices as we have done before. Use the results from the fit above to provide the reasonable bounds of what you should be profiling over (3SE should do). Is it well behaved? Plot the profile and give the 80% and 95% CI (remember how we use the chisq here!). Verify your results with profileModel.
+
+```{r 5c, warning=FALSE}
+
+MLE_lm <- function(xvar, yvar, res_sdev, slope, int){
+  
+  fitY <- xvar * slope + int
+  sum(dnorm(fitY, yvar, res_sdev, log = TRUE))
+  
+}
+summary(tarsus_mle)
+sd(residuals(tarsus_mle))
+# grid sample
+quail_grid <- crossing(int = -0.098707, # from the model
+                  slope = seq((0.372927-(3*0.006646)),(0.372927+(3*0.006646)), length.out = 100),
+                  res_sd = sd(residuals(tarsus_mle))) %>% # also from the model
+  rowwise(slope, int, res_sd) %>%
+  mutate(logLik = MLE_lm(slope = slope, int = int, res_sdev = res_sd, #from model
+                         yvar = quail$culmen_mm, xvar = quail$tarsus_mm),
+         deviance = -2*logLik) %>%
+  ungroup()
+
+
+ci_95 <- max(quail_grid$logLik) - qchisq(0.95, df=1)/2
+ci_80 <- max(quail_grid$logLik) - qchisq(0.80, df=1)/2
+
+
+# get profile
+lik_prof_slope <- quail_grid %>% 
+  group_by(slope) %>% 
+  filter(deviance == min(deviance)) %>% 
+  ungroup()
+
+# Plot the profile over the data
+ggplot(data = lik_prof_slope,
+       aes(x = slope, y = logLik)) + 
+  labs(x = "Slope",
+       y = "Log Likelihood") +
+  geom_line() +
+  geom_hline(yintercept = ci_95, color = "red") +
+  geom_hline(yintercept = ci_80, color = "blue") +
+  ylim(-1275,-1245)
+
+# Verify via profileModel
+library(profileModel)
+plot(profileModel(tarsus_mle,
+                  objective = "ordinaryDeviance",
+                  quantile = qchisq(0.95, 1)))
+plot(profileModel(tarsus_mle,
+                  objective = "ordinaryDeviance",
+                  quantile = qchisq(0.8, 1)))
+
+
+```
+
+As seen above and in the earlier model validation, the profiles for the MLE model are well behaved. 
+
+
+### 5d. The Power of the Prior
+
+This data set is pretty big. After excluding NAs in the variables we’re interested in, it’s over 766 lines of data! Now, a lot of data can overwhelm a strong prior. But only to a point. Show first that there is enough data here that a prior for the slope with an estimate of 0.7 and a sd of 0.01 is overwhelmed and produces similar results to the default prior. How different are the results from the original?
+
+Second, randomly sample 10, 100, 300, and 500 data points. At which level is our prior overwhelmed (e.g., the prior slope becomes highly unlikely)? Communicate that visually in the best way you feel gets the point across, and explain your reasoning.
+
++4 for a function that means you don’t have to copy and paste the model over and over. + 4 more if you use `map()` in combination with a tibble to make this as code-efficient as possible. This will also make visualization easier.
+
+
+```{r 5d pt 1, message=FALSE}
+# Looking at the data
+
+model_no_prior <- brm(culmen_mm ~ tarsus_mm,
+                   family = gaussian(link =
+                                       "identity"), 
+                   data = quail,
+                   chains = 4,
+                   save_pars = save_pars(all = TRUE),
+             sample_prior = TRUE,
+                   seed = 2020)
+
+
+model_prior <- brm(culmen_mm ~ tarsus_mm,
+                   family = gaussian(link =
+                                       "identity"), 
+                   data = quail,
+                   chains = 4,
+                   seed = 2020,
+                   save_pars = save_pars(all = TRUE),
+             sample_prior = TRUE,
+      # with a prior estimate of 0.7 and sd of 0.01
+      prior = prior(normal(0.7, 0.01), class = "b", coef = tarsus_mm))
+
+plot(hypothesis(model_prior, "tarsus_mm > 0"))
+plot(hypothesis(model_no_prior, "tarsus_mm > 0"))
+
+
+```
+
+Despite the strong prior, using all of the data completely overwhelms the prior (there is no overlap in their probability densities). The posterior of the model with the prior is shifted towards the posterior of the model with the flat prior than the strong prior
+
+```{r 5d pt1.b}
+# compare model with and without prior
+model_no_prior_loo <- loo(model_no_prior)
+model_prior_loo <- loo(model_prior)
+
+loo_compare(model_no_prior_loo, model_prior_loo)
+```
+
+However, we can see from the probability densities and this comparison that including the prior *does* have an impact and the two resulting models are also different. This really illustrates to me that even though a lot of data can overwhelm a prior, it can still sway the resulting model away from what would be observed without it. Whether a prior is any good will still be important to consider, no matter the data size. 
+
+Now if we weren't sampling with the entire data set...
+
+```{r 5d pt 2, message = FALSE}
+# write a function
+prior_test <- function(sample_sizes = 10, data, chain_no = 4){
+# that randomly samples n samples from the dataset
+  data_id <- data %>% 
+    mutate(samp_id = 1:nrow(.))
+  samples<- map_df(sample_sizes,
+                            ~data.frame((sample(data_id$samp_id, size = .x, replace = TRUE))) %>% 
+                              mutate(id = 1:.x, samp_size = .x) %>% 
+                              rename("samp_id" = 1)) %>% 
+    merge(x = ., y = data_id, by = "samp_id") %>% 
+    as_tibble() %>% 
+    dplyr::select(samp_id, id, samp_size, tarsus_mm, culmen_mm)
+  
+# then calculates a bayesian postierior
+
+model <- brm(culmen_mm ~ tarsus_mm,
+                   family = gaussian(link =
+                                       "identity"), 
+                   data = samples,
+                   chains = chain_no,
+                   seed = 2020,
+              save_pars = save_pars(all = TRUE),
+             sample_prior = TRUE,
+      # with a prior estimate of 0.7 and sd of 0.1
+      prior = prior(normal(0.7, 0.01), class = "b", coef = tarsus_mm)
+        )
+  model
+}
+
+#run all the models
+models <- map(c(10,100,300,500), 
+                ~prior_test(sample_sizes = .x, data = quail))
+
+# get the posteriors
+samp_10 <- posterior_samples(models[[1]], pars = "b_tarsus_mm")
+samp_100 <- posterior_samples(models[[2]], pars = "b_tarsus_mm")
+samp_300 <- posterior_samples(models[[3]], pars = "b_tarsus_mm")
+samp_500 <- posterior_samples(models[[4]], pars = "b_tarsus_mm")
+
+# and pull all the data together
+comparison_samp_size <- bind_rows("10 Samples" = gather(samp_10),
+                      "100 Samples" = gather(samp_100),
+                      "300 Samples" = gather(samp_300),
+                      "500 Samples" = gather(samp_500),
+                      .id = "id") %>% 
+  mutate(key = stringr::str_replace(key, "prior_b_tarsus_mm", "Prior")) %>% 
+  mutate(key = stringr::str_replace(key, "b_tarsus_mm", "Posterior"))
+
+# plot the probability densities
+ggplot(data    = comparison_samp_size, 
+       mapping = aes(x        = value,
+                     fill     =  id, 
+                     colour   = key)) +
+  geom_density(alpha = 0.3) +
+  theme_minimal() +
+  labs(x = "Slope Estimate",
+       y = "Probability Density",
+       colour = "Posterior/Prior",
+       fill = "Sample Size")
+
+```
+
+We can see that at low sample sizes, the posterior is closely aligned with (heavily influenced by) the prior. Even at 100 samples, there is some overlap in probability of the slope estimate with the prior. However, at sample sizes of 300 and 500, there is no overlap, meaning that the data has overwhelmed the prior completely. For this specific prior, it starts to be mostly overwhelmed at around 100 samples, but is likely not completely overwhelmed until 150-200 samples. 
+
+
+## 6. Cross-Validation and Priors
+
+There is some interesting curvature in the culmen-tarsus relationship. Is the relationship really linear? Squared? Cubic? Exponential? Use one of the cross-validation techniques we explored to show which model is more predictive. Justify your choice of technique. Do you get a clear answer? What does it say?
+
+-----
+
+I decided to use k-fold cross validation to look at polynomial functions from 1st order (linear) to 5th order. The data is large and and can support many folds, and thus can test each function many times. However, using a set number of folds is more efficient than LOO CV, which, with more than 700 data points, would have been very computationally intensive past the point of diminishing returns. Thus, k-fold validation seemed the best choice.
+
+To compare the models, I first calculated the RMSE of each fold. 
+
+```{r 6 kfold cv set up}
+set.seed(739187401)
+quail_models <- rsample::vfold_cv(quail, v = 20) %>% 
+  tidyr::crossing(., polyn = 1:5 )
+
+
+# create polynomial models
+quail_cv <- quail_models %>% 
+  mutate(mods = map2(splits, polyn, 
+                     ~lm(culmen_mm ~ poly(tarsus_mm, .y), data = rsample::analysis(.x)))) %>% 
+  mutate(rmse = map2_dbl(splits, mods, 
+                         ~modelr::rmse(model = .y, 
+                               data = rsample::assessment(.x))))
+
+
+# calculate  RMSE
+polyn_rmse <- data.frame(quail_cv$id, quail_cv$polyn, quail_cv$rmse) %>% 
+    arrange(by_group = quail_cv.polyn)
+
+# graph the data
+ggplot(data = polyn_rmse,
+       aes(x = quail_cv.polyn, y = quail_cv.rmse, color = quail_cv.id)) +
+  geom_point() +
+  labs(x = "Polynomial Order",
+       y = "RMSE",
+       color = "k fold")
+```
+
+
+As we can see from the graph, there is not a model that seems to clearly be preforming better than any other (though the 1st and 2nd order models seem to have a higher RMSE). To get a better sense of the data, I calculated the average RMSE for each model.
+
+```{r 6 kfold cv av RMSE, message = FALSE}
+# Calculate average RMSE
+polyn_rmse_av <- polyn_rmse %>%   
+  group_by(quail_cv.polyn) %>% 
+  summarize(av_rmse = mean(quail_cv.rmse), 
+            sd = sd(quail_cv.rmse)) %>% 
+  formattable::formattable()
+polyn_rmse_av
+
+```
+
+The cubic model has the lowest RMSE, but all of the RMSEs for every model is within the SD range of every other model, so we really don't learn much from this. 
+
+To try one more measure of comparison, I used `aictab()` to compare the models (Yes this is not using k-fold CV).
+```{r 6 AIC}
+library(AICcmodavg)
+mods_quail <- map(1:5, 
+                     ~lm(culmen_mm ~ poly(tarsus_mm, .x), data = quail))
+name_vec <- c("linear", "2nd order", "3rd order", "4th order", "5th order")
+formattable::formattable(aictab(cand.set = mods_quail, modnames = name_vec))
+```
+
+Again, nothing is very clear. The cubic model still seems to be preforming the best, but only marginally better than the 4th and 5th order models. The only new information here is that, by measure of AIC, the linear and 2nd order models are more clearly worse fits to the data than the 3rd, 4th, or 5th order models. 
+
+Ultimately, the models are all extremely similar and seem to preform within a reasonable margin of each other. However, a higher order model (3rd) may describe the data slightly better than lower orders (k < 5). 
