@@ -39,6 +39,8 @@ Each of you has a study system your work in and a question of interest. Give an 
 
 ---------
 
+### The Main Answer
+
   The study system I am currently working in is the skin microbiome of Eastern Newts (*Notophthalmus viridescens*). Generally, I am looking to understand how the microbial community varies across individuals under various conditions (which can be wildly different depending on if the experiment in question is an exposure experiment, field survey, etc). For this question, we will assume we are sampling to get an understanding of how the composition of the microbiome of juvenile Eastern Newts changes seasonally, with alpha diversity (species richness) of the microbiome as the variable in question.  
 
  We will define the population as all individuals within a regional area with similar seasonal patterns (i.e. Northeast). I would  include at least 5 sites, with sites being separated by at least 5 kilometers (Eastern newts in their terrestrial juvenile life stage are unlikely to travel that far - that we are aware of). Up to 20 individuals will be sampled at each site, with sampling occurring for 1 hour, or until 20 individuals are caught - whichever is first. All individuals will be caught in kept in whirlpack bags until the sampling period is over, to prevent unintentionally recapturing and re-sampling the same individuals at each time point. Individuals would be sampled in the Spring, Summer, and Fall (we could also do Winter if we were working further south. Fun fact, Eastern Newts have a geographic range that spans from Maine down to Florida!)
@@ -62,10 +64,7 @@ I was unsure of whether I should include the following because it could be thoug
 ------------  
   
 Here we will talk about the great problem of microbiome analysis - compositional data.   
-    
-![](https://media.giphy.com/media/MlNSich1jeAzm/giphy.gif)
-  
-    
+   
   Each illumina sequencing run (which is fairly standard in the field) only has so many spaces for strands of DNA from the prepared library to attach to the flow cell and be sequenced - thus the data we actually get to work with is itself a sample of our sample, and the number of reads per sequence that we get out are not true counts of what was in the . Abundances are all relative and do not reflect the true count of the microbes. Additionally, most statistical tests do not account for the compositional nature of the data and some argue strongly against using them, though they are commonly used in the literature.
   
 How do you deal with compositional data in analysis?  
@@ -206,7 +205,7 @@ cases_thru_time <- function(data, cases_col, mycolor = "blue", y_axis){
 }
 
 # Test function
-cases_thru_time(data = mass_cases, cases_col = daily_cases, mycolor = "blue", y_axis = "Total Cases")
+cases_thru_time(data = mass_cases, cases_col = cases_to_date, mycolor = "blue", y_axis = "Total Cases")
 
 
 # A version that looks at both day by day cases and total cumulative cases, or whatever two stats you want to compare
@@ -242,8 +241,6 @@ normalizer <- max(na.omit(cases_col2)) / max(na.omit(cases_col))
 # add animations!
   transition_reveal(date) +
   ease_aes("linear")
-  
-  
 }
 
 master_cases_thru_time(data = mass_cases, cases_col = mass_cases$daily_cases, cases_col2 = mass_cases$cases_to_date, y_axis = "Daily New Cases", y_axis2 = "Total Cases" )
@@ -294,22 +291,22 @@ state_plot(state = "New York", which_cases_col = 6)
 
 We have discussed multiple inferential frameworks this semester. Frequentist NHST, Likelihood and model comparison, Baysian probabilistic thinking, Assessment of Predictive Ability (which spans frameworks!), and more. We’ve talked about Popper and Lakatos. Put these pieces of the puzzle together and look deep within yourself.
 
-What do you feel is the inferential framework that you adopt as a scientist? Why? Include in your answer why you prefer the inferential tools (e.g. confidence intervals, test statistics, out-of-sample prediction, posterior probabilities, etc.) of your chosen worldview and why you do not like the ones of the other one. This includes defining just what those different tools mean, as well as relating them to the things you study. extra credit for citing and discussing outside sources - one point per source/point
+What do you feel is the inferential framework that you adopt as a scientist? Why? Include in your answer why you prefer the inferential tools (e.g. confidence intervals, test statistics, out-of-sample prediction, posterior probabilities, etc.) of your chosen worldview and why you do not like the ones of the other one. This includes defining just what those different tools mean, as well as relating them to the things you study. extra credit for citing and discussing outside sources - one point per source/point  
 
-### The Main Answer
+-------------  
 
 **Inductive vs Deductive Reasoning**
 
-Defining the difference between Popper and Lakatos' research designs is a bit hard to wrap my head together because they seem to me to be two different ways of stating the same thing. You may be working in a frequentist framework but studying something that is not directly measureable - what can you do other than something like Lakatos' design,  and test alternate hypotheses without testing the core tenants? Do we not use inductive reasoning to come up with hypotheses about how the world works, then use deductive reasoning to flesh out these predictions? Maybe I'm missing something important here, but the two types of reasoning just seem like part of the same process in science. 
-  For example, let's say you were studying a new organism. You may have a few observations about it and can use inductive reasoning to make some broad hypothesis about its life history, diet, etc. (This is inductive). Then once you have established your hypotheses, you would go gather more observations to deduce the truth of the claims (i.e. is this organism really a carnivore or is it an omnivore?  Is arboreal or terrestrial, or is both at different life stages?). Along the way, you may make some observations that, through inductive reasoning, leads you to come up with new hypotheses, that you then test. You can think of this happening in a straight line or you can think of this as adding to the "core" of Lakatos' research paradigm as you come up with and test new auxiliary hypotheses. Bigger picture thinking to me makes more sense as an inductive process while thinking about the details seems intuitively deductive. 
-  Maybe that means I fall along the lines of deductive thinking in the setting you wanted us to talk about. I'm not sure. (But the two aren't entirely independent in a scientific context in my head).   
+Defining the difference between Popper and Lakatos' research designs is a bit hard to wrap my head together because they seem to me to be two different ways of stating the same thing. You may be working in a frequentist framework but studying something that is not directly measureable - what can you do other than something like Lakatos' design,  and test alternate hypotheses without testing the core tenants? Do we not use inductive reasoning to come up with hypotheses about how the world works, then use deductive reasoning to flesh out these predictions? Maybe I'm missing something important here, but the two types of reasoning just seem like part of the same process in science.   
+  For example, let's say you were studying a new organism. You may have a few observations about it and can use inductive reasoning to make some broad hypothesis about its life history, diet, etc. (This is inductive). Then once you have established your hypotheses, you would go gather more observations to deduce the truth of the claims (i.e. is this organism really a carnivore or is it an omnivore?  Is arboreal or terrestrial, or is both at different life stages?). Along the way, you may make some observations that, through inductive reasoning, leads you to come up with new hypotheses, that you then test. You can think of this happening in a straight line or you can think of this as adding to the "core" of Lakatos' research paradigm as you come up with and test new auxiliary hypotheses. Bigger picture thinking to me makes more sense as an inductive process while thinking about the details seems intuitively deductive.   
+  Maybe that means I fall along the lines of deductive thinking in the setting you wanted us to talk about. I'm not sure. (But the two aren't entirely independent in a scientific context in my head).     
   Maybe the issue is that I disagree on some level with the question you're asking (or at least how I am interpreting it). I'm struggling with the idea that I am being asked to choose one concept which I fall in line with. I see both having their places in different contexts, and in picking one feel like I'm limiting myself in terms of how to think about an problem or observation and the kind of analysis I would do. If it is appropriate for my data and the question I'm asking to do cross-validation, then I should do cross-validation. If it's appropriate for me to do inductive model comparison, then I should do inductive model comparison. Doing one does not prevent me from doing another later down the line where needed - science has no true endpoint.  
 
 **The Tools**  
 
-  Now while I see validity and use for both inductive and deductive reasoning, I do have a slight preference for inductive tools over deductive tools. Mainly, this stems from the fact that I don't like that NHST doesn't tell us anything about the hypothesis other than (if significant) it is different from whatever hypothesis is tested. Whether I am using an F test to look at the ratio of variances or a t-test to determine if the coefficient of the parameter is 0 (no slope --> no relationship), the problem is the same. If the test indicates that there is a difference between the alternative hypothesis and the null, it doesn't tell us that the alternative we are testing is true (or to what degree it could be). Tf there is no difference, it doesn't tell us that our null is correct. I really like that with Bayesian techniques, we get a direct conclusion about the hypothesis - it feels much more concrete. I would rather know the degree of belief in an estimate of the influence of infection severity on disease outcome, than the probability that it is different from the null. For the same reasons, I prefer a credible interval to a confidence interval.
+  Now while I see validity and use for both inductive and deductive reasoning, I do have a slight preference for inductive tools over deductive tools. Mainly, this stems from the fact that I don't like that NHST doesn't tell us anything about the hypothesis other than (if significant) it is different from whatever hypothesis is tested. Whether I am using an F test to look at the ratio of variances or a t-test to determine if the coefficient of the parameter is 0 (no slope --> no relationship), the problem is the same. If the test indicates that there is a difference between the alternative hypothesis and the null, it doesn't tell us that the alternative we are testing is true (or to what degree we believe it could be). If there is no difference, it doesn't tell us that our null is correct. I really like that with Bayesian techniques, we get a direct conclusion about the hypothesis - it feels much more concrete. I would rather know the degree of belief in an estimate of the influence of infection severity on disease outcome, than the probability that it is different from the null. For the same reasons, I prefer a credible interval to a confidence interval.
   
- When it comes to tools like cross-validation and model comparison, I don't have as strong of feelings. Going back to the example I just gave, if I'm looking at how infection severity in eastern newts (measured in genomic equivalents of *Batarachochytrium dendrobatidis* or *Batrachochytrium salamandrivorans* detected by qPCR) is influenced by factors like size (SVL and mass), starting microbiome species richness, environmental temperature, etc., I want to be able to compare different models to see which factors really are having an influence and which are not. Using AIC to decide the model with the maximum likelihood when I've generated several may be appropriate if I'm trying to determine if a factor is influential or not. I may also want to be able to understand how predictive my model is in order to better understand the risk of certain populations of newts. To do that, I would want to use some variation of cross-validation for my model. While I do philosophically have a preference for Bayesian methods, I have a need to use some deductive techniques to answer some of my questions. 
+ When it comes to tools like cross-validation and model comparison, I don't have as strong of feelings. Going back to the example I just gave, if I'm looking at how infection severity in eastern newts (measured in genomic equivalents of *Batarachochytrium dendrobatidis* or *Batrachochytrium salamandrivorans* detected by qPCR) is influenced by factors like size (SVL and mass), starting microbiome species richness, environmental temperature, etc., I want to be able to compare different models to see which factors really are having an influence and which are not. Using AIC to decide the model with the maximum likelihood when I've generated several may be appropriate if I'm trying to determine if a factor is influential on the fit or not. I may also want to be able to understand how predictive my model is in order to better understand the risk of certain populations of newts based on these factors. To do that, I would want to use some variation of cross-validation for my model. While I do philosophically have a preference for Bayesian methods, I also have a need to use some deductive techniques to answer some of my questions. 
 
 
 ## 4. Bayes Theorem
@@ -333,7 +330,7 @@ everything_else <- 1 - two_sixes
 
 #where:
 
-# the likelihood is the probability that the device said yes (without lying ), given that the sun is exploding (exploded? I'm not sure we have time to do this if the sun is  exploding)
+# the likelihood is the probability that the device said yes (without lying), given that the sun is exploding (exploded? I'm not sure we have time to do this if the sun is  exploding)
 likelihood <- everything_else
 
 # the probability of the data (getting a yes)
@@ -347,7 +344,7 @@ posterior
 
 ### 4a. EC: Why is this a bad parody of frequentist statistics?
 
-It gets at the idea that people can blindly follow p values without really thinking about the data, but ignores the fact that most people wouldn't base the probability of the sun exploding based off of the roll of two dice. Where is the criticism on reliance on one sample to be representative? The need for large samples? Deterministic thinking? I know a frequentist wouldn't factor the probability of the sun exploding in as a *prior*, but they definitely wouldn't be making decisions about what is and isn't happening without considering that fact (if known) or otherwise trying to take it into account. 
+It gets at the idea that people can blindly follow p values without really thinking about the data, but ignores the fact that most people wouldn't base the probability of the sun exploding off of the roll of two dice. Where is the criticism on reliance on one sample to be representative? The need for large samples? Deterministic thinking? I know a frequentist wouldn't factor the probability of the sun exploding in as a *prior*, but they definitely wouldn't be making decisions about what is and isn't happening without considering that fact (if known) or otherwise trying to take it into account. 
 
 
 ## 5. Quailing at the Prospect of Linear Models
@@ -388,7 +385,8 @@ quail_plot
 
 ### Least Squares
 
-```{r 5a LS, warning=FALSE}
+```{r 5a LS, warning=FALSE, message = FALSE}
+# LS model
 tarsus_lik_lm <- lm(culmen_mm ~ tarsus_mm,
                      data = quail)
 
@@ -402,6 +400,7 @@ simulate(tarsus_lik_lm, nsim = 100) %>%
   geom_density(aes(group = sim), lwd = 0.2) +
   geom_density(data = quail, color = "blue", lwd = 2)
 
+# not perfect but not too bad either
 plot(tarsus_lik_lm, which = 1)
 plot(tarsus_lik_lm, which = 2)
 
@@ -423,6 +422,7 @@ quail_plot +
 ### Maximum Likelihood Estimate
 
 ```{r 5a MLE}
+# Likelihood model
 tarsus_mle <- glm(culmen_mm ~ tarsus_mm,
                      family = gaussian(link = "identity"), 
                      data = quail)
@@ -477,9 +477,6 @@ pp_check(quail_bayes, type = "scatter")
 qqnorm(bayes_res$Estimate)
 qqline(bayes_res$Estimate)
 
-# not looking so great
-shapiro.test(bayes_res$Estimate)
-
 # but the error looks normal
 pp_check(quail_bayes, type = "error_hist")
 
@@ -490,7 +487,7 @@ pp_check(quail_bayes)
 # Getting the coefficients, validating Rhat assessment
 summary(quail_bayes)
 
-# Confidence intervals - generally pretty tight intervals
+# Credible intervals - generally pretty tight intervals
 posterior_interval(quail_bayes)
 
 # Visualize - looks like a good fit!
@@ -558,12 +555,12 @@ The intercept values for the LS and MLE models are exactly the same to 8 decimal
 As with the coefficients, the error values for the LS and MLE models are identical. The error values for the Bayesian model were *slightly* lower for both the slope and intercept, but all models had very similar error values. 
 
 **Confidence/Credible Intervals**  
-The confidence intervals varied for all three models, but again were very similar to each other. The Bayesian model had the largest interval for the intercept, but the smallest for the slope, followed by the MLE, then LS models - though it is worth noting that the LS and MLE model CIs were nearly identical. 
+The confidence intervals varied for all three models, but again were very similar to each other. The Bayesian model had the largest interval for the intercept and slope, followed by the MLE, then LS models - though it is worth noting that the intervals for both estimates across all the models overlapped heavily. 
 
 **Interpreting the Results**  
 Each model used a slightly different (or in the case of Bayes, very different) method to fit the data, so the interpretation can vary. For the estimates, the same basic number is being calculated, so in practice these results can be interpreted similarly - the rate of change in per mm of culmen length correlates with a ~ 0.37 mm change in tarsus length. The error values, while calculated differently, also can be interpreted in the same way - the slope is ~ 0.37 +/- 0.006, or the rate of tarsus length change per mm of culmen length change is ~ 0.37 +/- 0.006.
 
-Once we get into the confidence/credible intervals, however, the interpretations change. Whereas the frequentist statistics are looking at a window of values where, with repeated sampling, we would find the true parameter value within 95% of the time, the Bayesian approach focuses on the degree of belief in a specific value. Bayesian credible intervals indicate the window in which 95% of all probable values (having a probability density greater than 0) are found. So when we look at the CI values in the chart, the LS and MLE models tell us that if we were to sample quail populations many times, we would see 95% of our estimated slopes fall within the range of 0.359 and 0.385. Our Bayesian model tells us that, given any estimate of the slope, we can assign a degree of belief in it, from 0 to 1 (theoretically, though with the probability spread out, the maximum value will likely be less than 0.5), and 95% of all our probability (total of 1 or 100%) is found within 0.360 and 0.385. In plain English, the most believable (or credible!) estimate values fall within the credible interval. 
+Once we get into the confidence/credible intervals, however, the interpretations change. Whereas the frequentist statistics are looking at a window of values where, with repeated sampling, we would find the parameter value within 95% of the time, the Bayesian approach focuses on the degree of belief in a specific value. Bayesian credible intervals indicate the window in which 95% of all probable values (having a probability density greater than 0) are found. So when we look at the CI values in the chart, the LS and MLE models tell us that if we were to sample quail populations many times, we would see the true slope or intercept value captured within the range of 0.359 and 0.385 95% of the time. Our Bayesian model tells us that, given any estimate of the slope, we can assign a degree of belief in it, from 0 to 1 (theoretically, though with the probability spread out, the maximum value will likely be less than 0.5), and 95% of all our probability (total of 1 or 100%) is found within 0.360 and 0.385. In plain English, the most believable (or credible!) estimate values fall within the credible interval. 
 
 ### 5c. Everyday I'm Profilin'
 
@@ -712,6 +709,10 @@ model <- brm(culmen_mm ~ tarsus_mm,
 models <- map(c(10,100,300,500), 
                 ~prior_test(sample_sizes = .x, data = quail))
 
+fixed_effects <- map(1:4,
+                     ~fixef(models[[.x]]))
+fixed_effects
+
 # get the posteriors
 samp_10 <- posterior_samples(models[[1]], pars = "b_tarsus_mm")
 samp_100 <- posterior_samples(models[[2]], pars = "b_tarsus_mm")
@@ -737,11 +738,12 @@ ggplot(data    = comparison_samp_size,
   labs(x = "Slope Estimate",
        y = "Probability Density",
        colour = "Posterior/Prior",
-       fill = "Sample Size")
+       fill = "Sample Size") +
+  facet_wrap(~id)
 
 ```
 
-We can see that at low sample sizes, the posterior is closely aligned with (heavily influenced by) the prior. Even at 100 samples, there is some overlap in probability of the slope estimate with the prior. However, at sample sizes of 300 and 500, there is no overlap, meaning that the data has overwhelmed the prior completely. For this specific prior, it starts to be mostly overwhelmed at around 100 samples, but is likely not completely overwhelmed until 150-200 samples. 
+We can see that at low sample sizes, the posterior is closely aligned with (heavily influenced by) the prior. Even at 100 samples, there is some overlap in probability of the slope estimate with the prior. However, at sample sizes of 300 and 500, there is no overlap, meaning that the data has overwhelmed the prior completely. For this specific prior, it starts to be mostly overwhelmed at around 100 samples, but is likely not completely overwhelmed until 150-200 samples. This is reflected in the fixed effects, where the 10 samples model maintains the prior mean of 0.7 is within the 95%  credible interval, but this is not the case for the 100, 300, and 500 samples models. 
 
 
 ## 6. Cross-Validation and Priors
@@ -756,7 +758,7 @@ To compare the models, I first calculated the RMSE of each fold.
 
 ```{r 6 kfold cv set up}
 set.seed(739187401)
-quail_models <- rsample::vfold_cv(quail, v = 20) %>% 
+quail_models <- rsample::vfold_cv(quail, v = 30) %>% 
   tidyr::crossing(., polyn = 1:5 )
 
 
@@ -783,7 +785,7 @@ ggplot(data = polyn_rmse,
 ```
 
 
-As we can see from the graph, there is not a model that seems to clearly be preforming better than any other (though the 1st and 2nd order models seem to have a higher RMSE). To get a better sense of the data, I calculated the average RMSE for each model.
+As we can see from the graph, there is not one model that seems to clearly be preforming better than any other (though the 1st and 2nd order models seem to have a higher RMSE). To get a better sense of the data, I calculated the average RMSE for each model.
 
 ```{r 6 kfold cv av RMSE, message = FALSE}
 # Calculate average RMSE
@@ -796,17 +798,6 @@ polyn_rmse_av
 
 ```
 
-The cubic model has the lowest RMSE, but all of the RMSEs for every model is within the SD range of every other model, so we really don't learn much from this. 
-
-To try one more measure of comparison, I used `aictab()` to compare the models (Yes this is not using k-fold CV).
-```{r 6 AIC}
-library(AICcmodavg)
-mods_quail <- map(1:5, 
-                     ~lm(culmen_mm ~ poly(tarsus_mm, .x), data = quail))
-name_vec <- c("linear", "2nd order", "3rd order", "4th order", "5th order")
-formattable::formattable(aictab(cand.set = mods_quail, modnames = name_vec))
-```
-
-Again, nothing is very clear. The cubic model still seems to be preforming the best, but only marginally better than the 4th and 5th order models. The only new information here is that, by measure of AIC, the linear and 2nd order models are more clearly worse fits to the data than the 3rd, 4th, or 5th order models. 
-
-Ultimately, the models are all extremely similar and seem to preform within a reasonable margin of each other. However, a higher order model (3rd) may describe the data slightly better than lower orders (k < 5). 
+The cubic model has the lowest RMSE, but all of the RMSEs for every model is within the SD range of every other model, so there is not one clear "best" model here. 
+  
+Ultimately, the models are all extremely similar and seem to preform within a reasonable margin of each other. However, a higher order model (3rd) may describe the data slightly better than lower orders (1st and 2nd). 
