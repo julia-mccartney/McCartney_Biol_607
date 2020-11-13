@@ -9,7 +9,7 @@ output: html_document
 #### Julia McCartney  
 #### Due Nov 13th 2020
 
-This Midterm's file can also be found on [Github]()
+This Midterm's file can also be found on [Github](https://github.com/julia-mccartney/McCartney_Biol_607/blob/master/exam/McCartney_Midterm.Rmd)
 
 
 
