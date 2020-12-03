@@ -1,0 +1,96 @@
+---
+title: "Draft Final Code and Thinking"
+author: "Julia"
+date: "12/2/2020"
+output: html_document
+---
+
+
+# Final Project aaaaaaayyyyyyyyyy {.tabset}
+
+## Libraries
+
+```{r Libraries, message = FALSE}
+library(dplyr)
+library(biomformat)
+library(qiime2R)
+library(tidyr)
+library(vegan)
+```
+
+## Prepreocessing explanation
+
+Should we used rarefied or not????
+
+## Import the data
+
+```{r Import, message = FALSE}
+
+its_raw <- read_q2biom("Data_Smith_Cooccur/SmPro_ITS_feature-table_mapfilt_fixed.biom")
+microb_raw <- read_qza("Data_Smith_Cooccur/SmPro_16S_deblurTable_taxfilt_NOVIEUWIonly.qza")
+mapping <- readr::read_tsv("Data_Smith_Cooccur/SmPro_Mapping_merge.txt") %>% 
+  filter(Species != "EUWI")
+
+```
+
+
+## Create Presence/Absence Co-occurrence Tables
+
+```{r Make PA tables}
+# make count data binary
+its_pa <- its_raw %>% as.data.frame() %>% 
+    add_rownames(var = "otu_code") %>% 
+  janitor::clean_names() %>% 
+  pivot_longer(cols = !1, names_to = "Sample", values_to = "Count") %>% 
+  mutate_at(vars(Count), funs (ifelse(. > 0, 1, 0))) %>% # make binary
+  pivot_wider(id_cols = otu_code, names_from = Sample, values_from = Count) %>% 
+  select(contains(c("otu", "novi"))) %>%  # selecting only for species of interest
+  tibble::column_to_rownames(var = "otu_code")
+
+
+microb_pa <- microb_raw$data %>% as.data.frame() %>% 
+  add_rownames(var = "OTU_code") %>% 
+  janitor::clean_names() %>% 
+  pivot_longer(cols = !1, names_to = "Sample", values_to = "Count") %>% 
+  mutate_at(vars(Count), funs (ifelse(. > 0, 1, 0))) %>% # make binary
+  pivot_wider(id_cols = otu_code, names_from = Sample, values_from = Count) %>% 
+  select(contains(c("otu", "novi"))) %>% # selecting only for species of interest
+  tibble::column_to_rownames(var = "otu_code")
+
+merge_pa <- rbind(its_raw, microb_raw) %>% as.data.frame()
+
+```
+
+
+
+## Calculate Jacard's Distances
+
+Why Jaccard?
+
+```{r Jaccard}
+# Calculate Jaccard Distances for al networks
+its_dist <- vegdist(its_pa, method = "jaccard")
+
+
+```
+
+
+
+## Calculate Null (See paper Molly Attached)
+
+"This null distribution of microbes was achieved through within-site randomization using MCMC edge swapping, a standard method for network datasets"
+
+"To achieve this, first, two microbe-frog pairs were randomly selected (each pair consisting of a single randomly selected microbial OTU found on a single randomly selected frog). Microbial OTUs were then swapped between the selected frogs when three criteria were met: (1) the frogs were different individuals with the same MHC IIB genotype (either both homozygous or both heterozygous); (2) the OTUs were different from one another; and (3) neither frog already hosted the microbe it would receive via the swap. Microbe swapping was performed with 1000 repetitions for each frog-microbe pair to construct a single set of randomized frog-microbe pairs. The distribution of co-occurrences under this null model was estimated using 320,000 such randomized sets. "
+
+EXPLAIN WHY THIS NULL
+
+I think MCMC edge swapping would also account for the issues the jaccard paper brought up since it is using a null of the actual data --> assumptions based on how it is, not some theoretical null
+
+## Visualize Networks
+
+## Mantel Test in here somewhere? Look at some geographic distances
+
+
+## Interpret
+
+
