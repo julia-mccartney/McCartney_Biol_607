@@ -16,6 +16,9 @@ library(biomformat)
 library(qiime2R)
 library(tidyr)
 library(vegan)
+library(igraph)
+library(cooccur)
+library(purrr)
 ```
 
 ## Prepreocessing explanation
@@ -25,11 +28,18 @@ Should we used rarefied or not????
 ## Import the data
 
 ```{r Import, message = FALSE}
+# import OTU tables
+its_raw <- read_qza("Data_Smith_Cooccur/rarefied_its_otu.qza")
+microb_raw <- read_qza("Data_Smith_Cooccur/rarefied_16s_otu.qza")
 
-its_raw <- read_q2biom("Data_Smith_Cooccur/SmPro_ITS_feature-table_mapfilt_fixed.biom")
-microb_raw <- read_qza("Data_Smith_Cooccur/SmPro_16S_deblurTable_taxfilt_NOVIEUWIonly.qza")
+# Import mapping data
 mapping <- readr::read_tsv("Data_Smith_Cooccur/SmPro_Mapping_merge.txt") %>% 
   filter(Species != "EUWI")
+
+# Import taxonomy
+its_taxa <- read_qza("Data_Smith_Cooccur/SmProITS_taxonomy.qza") %>% .[[6]]
+microb_taxa <- read_qza("Data_Smith_Cooccur/SmPro_16S_taxonomy.qza") %>% .[[6]]
+
 
 ```
 
@@ -37,30 +47,51 @@ mapping <- readr::read_tsv("Data_Smith_Cooccur/SmPro_Mapping_merge.txt") %>%
 ## Create Presence/Absence Co-occurrence Tables
 
 ```{r Make PA tables}
-# make count data binary
+# Make count data binary for ITS
 its_pa <- its_raw %>% as.data.frame() %>% 
     add_rownames(var = "otu_code") %>% 
+  merge(., its_taxa, by.x = "otu_code", by.y = "Feature.ID") %>% # add in taxonomy info
+  relocate(Taxon, Confidence) %>% 
   janitor::clean_names() %>% 
-  pivot_longer(cols = !1, names_to = "Sample", values_to = "Count") %>% 
-  mutate_at(vars(Count), funs (ifelse(. > 0, 1, 0))) %>% # make binary
-  pivot_wider(id_cols = otu_code, names_from = Sample, values_from = Count) %>% 
-  select(contains(c("otu", "novi"))) %>%  # selecting only for species of interest
-  tibble::column_to_rownames(var = "otu_code")
+  pivot_longer(cols = !1:3, names_to = "Sample", values_to = "Count")  %>% 
+  mutate_at(vars(Count), funs (ifelse(. >= 100, 1, 0))) %>% # make binary, filter out samples with less than 100 reads (mitigate false positives?)
+  pivot_wider(id_cols = c(taxon, confidence, otu_code), names_from = Sample, values_from = Count) %>% 
+  select(contains(c("otu", "novi", "taxon", "confidence"))) %>%  # selecting only for species of interest
+  relocate(taxon, confidence) %>% 
+ # remove rows with all 0s 
+  rowwise() %>% 
+  filter(sum(c_across(4:last_col())) != 0)
 
-
+# Make count data binary for 16S
 microb_pa <- microb_raw$data %>% as.data.frame() %>% 
-  add_rownames(var = "OTU_code") %>% 
+  add_rownames(var = "otu_code") %>% 
+  merge(., microb_taxa, by.x = "otu_code", by.y = "Feature.ID") %>% # add in taxonomy info
+  relocate(Taxon, Confidence) %>%
   janitor::clean_names() %>% 
-  pivot_longer(cols = !1, names_to = "Sample", values_to = "Count") %>% 
-  mutate_at(vars(Count), funs (ifelse(. > 0, 1, 0))) %>% # make binary
-  pivot_wider(id_cols = otu_code, names_from = Sample, values_from = Count) %>% 
-  select(contains(c("otu", "novi"))) %>% # selecting only for species of interest
-  tibble::column_to_rownames(var = "otu_code")
+  pivot_longer(cols = !1:3, names_to = "Sample", values_to = "Count") %>% 
+  mutate_at(vars(Count), funs (ifelse(. > 100, 1, 0))) %>% # make binary, filter out samples with less than 100 reads (mitigate false positives?)
+  pivot_wider(id_cols = c(taxon, confidence, otu_code), names_from = Sample, values_from = Count) %>% 
+  select(contains(c("otu", "novi", "taxon", "confidence"))) %>% # selecting only for species of interest
+  relocate(taxon, confidence)
 
-merge_pa <- rbind(its_raw, microb_raw) %>% as.data.frame()
+# Create a merged PA table to analyse co occurrence of fungi and microbes, instead of each independently
+
+# Some samples are present in the ITS data that are not in the microbiome data due to sequencing data quality, etc. These will be removed for analysis
+
+# Get 16S samples
+microbe_samples <- microb_raw$data %>% as.data.frame() %>% select(contains("novi")) %>% janitor::clean_names() %>% colnames()
+
+# Get ITS samples
+its_samples <- as.data.frame(its_raw) %>% select(contains("novi")) %>% janitor::clean_names() %>%  colnames() 
+
+# Get list of discrepancies
+missing_list <- its_samples[!its_samples %in% microbe_samples]
+subset_its <- its_pa %>%  select(-all_of(missing_list))
+
+# Create merged PA table
+merge_pa <- rbind(subset_its, microb_pa)
 
 ```
-
 
 
 ## Calculate Jacard's Distances
@@ -68,12 +99,43 @@ merge_pa <- rbind(its_raw, microb_raw) %>% as.data.frame()
 Why Jaccard?
 
 ```{r Jaccard}
-# Calculate Jaccard Distances for al networks
-its_dist <- vegdist(its_pa, method = "jaccard")
+# Calculate Jaccard Distances for all networks based on OTUs (not grouped by genus or any higher order)
+its_dist <- its_pa %>% select(!1:2) %>% tibble::column_to_rownames(var = "otu_code") %>% as.matrix()
+
+  test <- vegdist(its_dist, method = "jaccard")
+microb_dist <- microb_pa %>% select(!1:2) %>% tibble::column_to_rownames(var = "otu_code") %>% 
+  vegdist(method = "jaccard")
+merge_dist <- merge_pa %>% select(!1:2) %>% tibble::column_to_rownames(var = "otu_code") %>% 
+  vegdist(method = "jaccard")
+
+#############
+
+
+
 
 
 ```
 
+Calculating using co occur
+
+```{r cooccur}
+# It works it just takes forever
+its_coo <- its_pa %>% 
+  select(!1:2) %>% 
+  tibble::column_to_rownames(var = "otu_code") %>% cooccur::cooccur(spp_names = TRUE, prob = "hyper")
+
+
+saveRDS(its_coo, "its_coo")
+
+
+its_coo <- microb_pa %>% 
+  select(!1:2) %>% 
+  tibble::column_to_rownames(var = "otu_code") %>% cooccur::cooccur(spp_names = TRUE, prob = "hyper")
+
+
+
+# how to save object as a file???
+```
 
 
 ## Calculate Null (See paper Molly Attached)
@@ -86,7 +148,84 @@ EXPLAIN WHY THIS NULL
 
 I think MCMC edge swapping would also account for the issues the jaccard paper brought up since it is using a null of the actual data --> assumptions based on how it is, not some theoretical null
 
+This is done WITHIN site - so run on things filtered to same site
+
+
+Create a null distribution (within site) using degree preserving randomization
+
+```{r}
+# site subset
+
+# random chains 
+
+# within a site
+
+# pick 2 random pairs of sample/otu
+
+#pick random otu for novi
+## either
+  ## pick novi, filter to present otus, select, then repeat
+## or
+  ## pick novi, pick out, if 0, repeat, if 1, select and repeat
+
+
+# sample not the same
+
+# otus not the same
+
+# otu not already found in other sample
+
+# then swap
+
+#### Coding the swap would be like:
+###### 
+a <- 1
+b <- 0
+
+swapb <- function(a,b){
+  a <- a + b
+  b <- a - b
+}
+swapa <- function(a,b){
+  a <- a - b
+}
+b <- swapb(a, b)
+
+a <- swapa(a,b)
+##### 
+
+
+# repeat with new pairs 1000x
+## use map?
+
+
+
+
+
+
+
+
+
+```
+
+
+
+
+
 ## Visualize Networks
+
+```{r}
+library(igraph)
+
+g <- its_pa %>% 
+  select(!1:2) %>% 
+  tibble::column_to_rownames(var = "otu_code") %>%
+  as.matrix() %>% 
+  graph.adjacency(mode = "min")
+class(g)
+
+```
+
 
 ## Mantel Test in here somewhere? Look at some geographic distances
 
@@ -94,3 +233,452 @@ I think MCMC edge swapping would also account for the issues the jaccard paper b
 ## Interpret
 
 
+THE PLAN
+
+Rarify
+
+Split by site
+
+Calculate distances
+  Identify significant relationships
+  
+Calculate network parameters (centrality, dispersion, idk)
+
+Look at how these factors vary by site characteristics
+  regressional analysis
+
+
+THIS WILL BE A VERY DESCRIPTIVE PROJECT
+
+Would also be intersting to see if, when clustered outside of site, if we see consistent co occurence (do sites emerge) -- maybe this is obvious and they will
+
+Have a map showing the sites!
+
+# ACTUAL SECTION ##########
+
+## Fieldwork
+
+Eastern newts were sampled along a latitudinal gradient in the Eastern United States, from south to north, during the onset of spring emergence and the start of breeding, from 17 March 2018 to 13 May 2018. Direction of sampling was intentional as a proxy for standardization of newt activity and season, to the extent that was possible. 
+
+Sites were chosen at the direction of local biologists with expertise and by opportunistic discovery 
+
+
+Field sampling was done as described in Horan **et al.** 2020. 
+## Pre-Processing
+
+Genomic DNA from skin swabs were extracted using the Qiagen DNeasy Blood and Tissue Kit, with volumes reduced for processing iin 0.5 mL tubes, as in Rebollar **et al.** 2016. Quantitative PCR was preformed for all samples to detect the presence of **Bd** and **Bsal** as described in Horan **et al.** 2020. Libraries were constructed using KIT, and next generation sequencing was preformed on an Illumina MiSeq. To target the V4 region of the 16S rRNA gene, 515F-806R primers were used to identify bacterial communities in one run (Caporaso **et al.** 2011), and PRIMERS were used to sequence the ITS region NUMBER? (CITE) to identify fungal species in a second run.  
+
+Sequencing data was processed using the Qiime2 pipeline. Briefly, reads were demultiplexed using CITE, then filtered to samples with a quality score of BLANK and clustered using Deblur (CITE). The GreenGenes database (13.8, 99% WHAT, CITE) was used to assign taxonomy to 16S rRNA reads, and the UNITE database (VERSION?, Nilsson **et al** 2018) for ITS reads. Phylogenetic trees were built using Mafft Fasttree (CITE). 
+
+In order to account for variation in read depth across samples, rarefaction was employed to normalize the total number of reads per sample. Rarefaction randomly selects reads to keep within a samples up to a maximum read depth, and while doing so could potentially obscure low abundance reads, later analyses will not be biased against samples with lower read depth, (and thus potentially artificially lower co-occurrences). Alpha rarefaction curves generated in Qiime2 were used to assess proper cutoffs. The 16S data was rarefied to a depth of 6000 and the ITS data to a depth of 4500. 
+
+Alpha and beta diversity metrics were calculated within Qiime2. In all beta diversity related analyses, unweighted unifrac and jaccard distances were used to compare differences between the communities of individuals. Unweighted unifrac is a distance metric that takes into account the phylogenetic distance between the two by assessing the differences in branch lengths for taxa exclusively in one community compared to another (Luzupone and Knight 2005). The unweighted unifrac metric takes into account only the presence or absence of a species, which is in line with co occurrence methods focusing solely on presence-absence data (see below).
+
+Throughout this work, analyses based on presence-absence data will be used. Marker gene sequencing data as a proxy for species abundance is flawed and if not properly accounted for, can lead to spurious co-occurrences or other measures. Instead of a direct count of species, microbiome data is relative - a sub-sample is taken from the environment or individual, and then the process of next generation sequencing instruments have a finite  number of DNA fragments it can sequence, resulting in yet another sub-sample. Read numbers are compositional unless other measures to quantify total genomic content (plasmid spike in) are taken. Most standard statistics used in macroecology cannot account for this kind of data and thus can lead to spurious results. Methods specifically for microbiome data have been designed to handle compositional data, but these inherently rely on abundance data (CITE). 
+
+Analysis techniques used here have been purposefully chosen to use only presence-absence data despite compositionally appropriate methods as they do not take into account yet another issue with sequencing data - copy number. Microbial and fungal species can have varying numbers of copies of the 16S and ITS genes, so one read does not equate to one species (CITE). This is better documented and accounted for in 16S data, but is not in ITS data (CITE). Using presence-absence based data, while it can give more weight to rare species, is a limitation that can be accurately acknowledged, whereas the influence of copy number variance is not easily measured.  
+
+
+
+
+Co-occurrence was measured through Jaccard dissimilarity and deviations from a hypergeometric null model were tested using a chi squared test. 
+
+Both Jaccard dissimilarity and Pearson's  correlation have been used previously in the literature for determining co-occurrence, with the latter potentially being more commonly used. However, as mentioned previously, most ecological metrics were designed for macro-scale systems and do not properly account for features unique to microbial data, and a wholesale transplant is naive. What motivates my choice of using the Jaccard metric over Pearson's correlation is how each model handles co-absence. 
+
+*Pearson's product moment correlation (phi coefficient)*
+$$r = \displaystyle \frac{ad-bc}{\sqrt{(a + b)(c + d)(a + c)(b + d)}}$$
+
+*Jaccard Similarity*
+
+$$J = \displaystyle \frac{a}{(a + b + c)}$$
+
+Where
+* a = Co-presence of both species
+* b = Presence of species 1, but not species 2
+* c = Presence of species 2, but not species 1
+* d = Co-absence of both species
+
+As described in Mainali **et al.** 2017, co-absence is far more prevalent in microbial communities than in other systems, and including co-absences (d) in a distance metric like Pearson's correlation will lead to inflation in the coefficient, which is a problem that can occur when both species are rare (and thus d is large), leading to overestimation of significance. In situations where one species is rare, the influence of d leads to underestimation of significant correlation. The Jaccard similarity is not without issues - this metric is sensitive to changes in a and can be more likely to over-predict positive correlations in a situation when one species is rare compared to r (Mainali **et al.** 2017). Given the sparsity of microbiome data (CITE) and the wide geographic range of sampling sites, many co-absences are to be expected in the data, and thus the Jaccard similarity metric is best for this situation. 
+
+Fisher's exact test 
+
+This paper explains it: https://onlinelibrary.wiley.com/doi/pdf/10.1111/geb.12418 
+
+
+
+
+EXPAND AND ACCTUALLY WRITE
+As we can't agree on what a species is (and with HGT, can that even exist really?), we won't do analysis at the OTU level (or rather I will, but will also do it at higher levels, as is the precedent when dealing with this data)
+
+
+## Import and Clean Data
+
+```{r Import, message = FALSE}
+# import OTU tables
+its_raw <- read_qza("Data_Smith_Cooccur/rarefied_its_otu.qza") %>% .$data %>% as.data.frame()
+microb_raw <- read_qza("Data_Smith_Cooccur/rarefied_16s_otu.qza") %>% .$data %>% as.data.frame()
+
+# Import mapping data
+mapping <- readr::read_tsv("Data_Smith_Cooccur/SmPro_Mapping_merge.txt") %>% 
+  filter(Species == "NOVI", SiteName != "NA") 
+
+# Import taxonomy
+its_taxa <- read_qza("Data_Smith_Cooccur/SmProITS_taxonomy.qza") %>% .[[6]]
+microb_taxa <- read_qza("Data_Smith_Cooccur/SmPro_16S_taxonomy.qza") %>% .[[6]]
+
+
+#Subset data by site
+mapping_list <- split(mapping, mapping$SiteName)
+
+#Remove sites with less than 10 samples
+mapping_list_cut <- mapping_list[lapply(mapping_list, nrow) > 10]
+
+#split data by sites
+samples_by_site <- lapply(mapping_list_cut, "[", "MicrobiomeID") 
+
+
+# ??????????? How to iterate????
+
+# how to do for one - ANY OF IS KEY
+acr_for_test <- its_raw %>% select(any_of(samples_by_site$`Ashe Calloway Rd`$MicrobiomeID))
+class(acr_for_test)
+fm_for_test <- its_raw %>% select(any_of(samples_by_site$`Fenwick Mines`$MicrobiomeID))
+hs_for_test <- its_raw %>% select(any_of(samples_by_site$`Holly Shelter`$MicrobiomeID))
+
+#iterate
+## FIX
+
+test <- map(samples_by_site,
+            ~.x)
+testtest <- map(test,
+                ~its_raw %>% select(any_of(as.character(.x))))
+              #its_raw %>% select(any_of(as.character.factor(.x))))
+
+
+
+# Add taxonomy to raw data
+
+#acr_for_test <- acr_for_test %>% 
+  add_rownames(var = "otu_code") %>% 
+  merge(., its_taxa, by.x = "otu_code", by.y = "Feature.ID") %>% # add in taxonomy info
+  relocate(Taxon, Confidence)
+
+  
+##### MICROBIAL
+  
+acr_for_test <- microb_raw %>% select(any_of(samples_by_site$`Ashe Calloway Rd`$MicrobiomeID))
+class(acr_for_test)
+fm_for_test <- microb_raw %>% select(any_of(samples_by_site$`Fenwick Mines`$MicrobiomeID))
+hs_for_test <- microb_raw %>% select(any_of(samples_by_site$`Holly Shelter`$MicrobiomeID))
+
+```
+
+
+## Create Presence/Absence Tables
+
+```{r PA tables}
+
+# make PA for one
+acr_for_test_pa <- acr_for_test %>% as.data.frame() %>% tibble::rownames_to_column() %>% 
+  pivot_longer(cols = 2:last_col(), names_to = "Sample", values_to = "Count") %>% 
+ filter(Count >= 10) %>% # make binary, filter out samples with less than 100 reads (mitigate false positives?)
+  pivot_wider( names_from = Sample, values_from = Count) %>% 
+  mutate_all(funs(ifelse(is.na(.), 0, .))) %>% 
+  tibble::column_to_rownames(var = "rowname") %>% 
+  decostand(method = "pa") %>% 
+  tibble::rownames_to_column() %>%
+  filter(sum(c_across(2:last_col())) != 0) %>% 
+  tibble::column_to_rownames(var = "rowname")
+
+
+# PA for all microbe
+microbe_pa <- microb_raw %>% as.data.frame() %>% tibble::rownames_to_column() %>% 
+  pivot_longer(cols = 2:last_col(), names_to = "Sample", values_to = "Count") %>% 
+ filter(Count >= 10) %>% # make binary, filter out samples with less than 100 reads (mitigate false positives?)
+  pivot_wider( names_from = Sample, values_from = Count) %>% 
+  mutate_all(funs(ifelse(is.na(.), 0, .))) %>% 
+  tibble::column_to_rownames(var = "rowname") %>% 
+  decostand(method = "pa") %>% 
+  tibble::rownames_to_column() %>%
+  filter(sum(c_across(2:last_col())) != 0) %>% 
+  tibble::column_to_rownames(var = "rowname")
+
+# make PA for iterative list? yes!
+mini_list <- list(acr_for_test, fm_for_test, hs_for_test)
+
+PAs <- map(mini_list,
+           ~ .x %>% 
+             as.data.frame() %>% 
+             tibble::rownames_to_column() %>% 
+             pivot_longer(cols = 2:last_col(), names_to = "Sample", values_to = "Count") %>% 
+             filter(Count >= 10) %>% # filter out samples with less than 10 reads 
+             pivot_wider( names_from = Sample, values_from = Count) %>% 
+             mutate_all(funs(ifelse(is.na(.), 0, .))) %>% 
+             tibble::column_to_rownames(var = "rowname") %>% 
+             decostand(method = "pa") %>% 
+             tibble::rownames_to_column() %>%
+             filter(sum(c_across(2:last_col())) != 0) %>% 
+             tibble::column_to_rownames(var = "rowname"))
+
+```
+
+## Jaccard Distances
+
+```{r Jaccard distancees}
+
+jaccard <- map(PAs,
+               ~t(.x) %>%  vegdist( method = "jaccard", diag = T))
+
+test <- jaccard[[1]]
+
+test <- acr_for_test_pa %>% vegdist( method = "jaccard", binary = TRUE) %>% as.matrix()
+
+
+```
+
+
+## Coocurrence?
+
+```{r coocurrence}
+#acr_coo <- acr_for_test_pa %>% cooccur::cooccur(spp_names = TRUE, prob = "hyper")
+#saveRDS(acr_coo, "acr_cooccurrence")
+
+obs.v.exp(acr_coo)
+
+pair.attributes(acr_coo)
+pair.profile(acr_coo)
+plot(acr_coo)
+prob.table(acr_coo)
+
+print(acr_coo)
+
+# Iterate
+#coos <- map(PAs,
+          #  ~cooccur::cooccur(.x, spp_names = TRUE, prob = "hyper"))
+#summary(coos[[1]])
+#test <- coos[[1]]
+
+#FIGURE OUT HOW TO STORE THESE
+
+#saveRDS(coos, "cooccurrence_listofsites")
+
+
+## MICROBE COO ALL
+
+#microbe_coo <- cooccur::cooccur(microbe_pa, spp_names = TRUE, prob = "hyper")
+#saveRDS(microbe_coo, "microbe_coo")
+summary()
+
+
+```
+
+
+NULL MODEL
+
+```{r null calc}
+
+working <- acr_for_test_pa %>% tibble::rownames_to_column(var = "OTUs") %>% 
+  pivot_longer( cols = 2:last_col(), names_to = "site", values_to = "PA")
+
+tally <- working %>% 
+  group_by(OTUs, PA) %>% 
+  tally()
+
+no_sites <- length(unique(working$site))
+
+freq_pres <- working %>% 
+  group_by(OTUs, PA) %>% 
+  tally() %>% 
+  mutate(freq_pres = n/no_sites )
+
+pairwise <- as.data.frame(t(combn(freq_pres$OTUs, 2)))
+
+paired <- merge(pairwise, freq_pres, by.x = 'V1', by.y = 'OTUs') %>%
+  rename(PA_1 = PA, n_1 = n, freq_pres1 = freq_pres) %>% 
+  mutate(freq_abs1 = 1-freq_pres1, n_abs1 = no_sites - n_1) %>% 
+ merge(.,freq_pres, by.x = 'V2', by.y = 'OTUs') %>%  rename(PA_2 = PA, n_2 = n, freq_pres2 = freq_pres) %>% 
+  mutate(freq_abs2 = 1-freq_pres2, n_abs2 = no_sites - n_2) %>% 
+  unite(pair, V1, V2, sep = "_")
+ 
+probs <- phyper()
+
+
+
+
+```
+
+
+
+TEST FOR SIGNIFICANCE
+  Dont forget to account for adjusting alpha (0.05/unique sp pairs)
+  
+  
+```{r Fish}
+# Hey guess what, after all of that stress, it's just Fisher's exact tests!
+
+#* a = Co-presence of both species
+#* b = Presence of species 1, but not species 2
+#* c = Presence of species 2, but not species 1
+#* d = Co-absence of both species
+
+working <- acr_for_test_pa %>% tibble::rownames_to_column(var = "OTUs") %>% 
+  pivot_longer( cols = 2:last_col(), names_to = "site", values_to = "PA")
+
+
+pairwise <- crossing(working$OTUs, working$OTUs)
+  
+  as.data.frame(t(combn(freq_pres$OTUs, 2))) %>% 
+  mutate(pairs = paste(pairwise$V1, pairwise$V2, sep = "_"))
+
+length(unique(pairwise$pairs))
+
+test_pair <- paste(pairwise$V1, pairwise$V2, sep = "_")
+
+paired <- merge(pairwise, working, by.x = 'V1', by.y = 'OTUs') %>%
+  rename(PA_1 = PA) %>% 
+  merge(., working, by.x = c('V2', 'site'), by.y = c('OTUs', 'site')) %>% 
+  rename(PA_2 = PA) %>% 
+  
+tally2 <- paired %>% 
+  group_by(V1, V2, PA_1, PA_2) %>% 
+  tally()
+
+
+BASIC_OUTLINE <- matrix(c(a, c, b, d), nrow = 2,
+	              dimnames =
+	       list(c("sp2_1", "sp2_0"),
+		    c("sp1_1", "sp1_0")))
+
+
+combn(vec, 2)
+
+vec <- c("ap", "hello", "why oh why")
+
+
+expand.grid(fruits$type, fruits$type, )
+
+
+fruits <- tibble(
+  type   = c("apple", "orange", "apple", "orange", "orange", "orange"),
+  year   = c(2010, 2010, 2012, 2010, 2010, 2012),
+  size  =  factor(
+    c("XS", "S",  "M", "S", "S", "M"),
+    levels = c("XS", "S", "M", "L")
+  ),
+  weights = rnorm(6, as.numeric(size) + 2)
+)
+
+fruits %>% expand(type)
+fruits %>% expand(nesting(type))
+```
+
+
+## Hey visualize - put in a PCA(?) or PCOA(?)
+
+PCA uses direct values, PCoA used distance input - we want to use PCoA to utilize the jaccard distances
+
+NEED TO LOOK INTO MORE
+
+```{r}
+
+pcoa_maybe <- ape::pcoa(test, correction = "none")
+
+ape::biplot.pcoa(pcoa_maybe)
+
+```
+
+
+## Build networks and get network parameters
+
+```{r TESTING}
+#From: https://www.r-graph-gallery.com/250-correlation-network-with-igraph#:~:text=A%20correlation%20matrix%20can%20be%20visualized%20as%20a,the%20graph_from_adjacency_matrix%20%28%29%20function%20of%20the%20igraph%20package.
+
+library(igraph)
+ 
+# data
+# head(mtcars)
+ 
+# Make a correlation matrix:
+mat <- cor(t(mtcars[,c(1,3:6)]))
+mat
+class(mat)
+
+# Keep only high correlations
+mat[mat<0.995] <- 0
+ 
+# Make an Igraph object from this matrix:
+network <- graph_from_adjacency_matrix( mat, weighted=T, mode="undirected", diag=F)
+
+# Basic chart
+plot(network)
+
+
+network <- graph_from_adjacency_matrix(test, weighted=TRUE, mode="upper", diag=T)
+
+fastgreedy.community(network)
+
+# Basic chart
+plot(network)
+
+
+
+```
+
+
+network parameters
+  http://www.martingrandjean.ch/gephi-introduction/
+  (A = Degree centrality, number of connexions ; B = Closeness centrality, closeness to the entire network ; C = Betweenness centrality, bridges nodes ; D = Eigenvector centrality, connexion to well-connected nodes).
+  
+  So maybe look at how closeness centrality changes via location?
+
+
+
+```{r}
+#ALTERNATE SET UP
+
+# Create a data frame of the nodes in the network. 
+nodes <- data.frame(id = 1:nrow(finches),
+                    label = rownames(finches),
+                    color = "#606482",
+                    shadow = TRUE)  
+
+# Create an edges dataframe from the significant pairwise co-occurrences.
+edges <- data.frame(from = co$sp1, to = co$sp2,
+                    color = ifelse(co$p_lt <= 0.05, "#B0B2C1", "#3C3F51"),
+                    dashes = ifelse(co$p_lt <= 0.05, TRUE, FALSE))
+```
+
+## alpha beta
+
+```{r}
+
+mapping_cut <- mapping %>% 
+  
+
+samples_by_site 
+
+
+
+# Adonis2
+adonis2(t(microbe_pa) ~ SiteName , data = mapping)
+
+#Beta dispr
+betadisper()
+
+
+
+```
+
+
+## Do some modeling on the parameters/summary stats/probabilities(??) over data like lat/long and such -- Maybe mantel tests?
+
+
+Check for multicoliniarity 
+
+
+
+
+
+## Citations
+
+https://www.ncbi.nlm.nih.gov/pmc/articles/PMC1317376/ 
